@@ -51,13 +51,31 @@ def get_shadow(pedestrian_keys, model,solar_vector):
         else: shadow.update({key:1})
     return shadow
 
-def calc_wvf(pedestrian, key, face, mesh_area): 
+#def calc_wvf(pedestrian, key, face, mesh_area): 
+#    """ Calculates WVF for a key that is on a face """ 
+#    normal = envuo.py3dmodel.construct.make_vector((0,0,0),envuo.py3dmodel.calculate.face_normal(face))
+#    ped2surf = envuo.py3dmodel.construct.make_vector(pedestrian, key)
+#    return mesh_area*abs(normal.Dot(ped2surf.Normalized()))/ (4*np.pi*ped2surf.Magnitude()**2)
+
+def calc_wvf(pedestrian, key, face, mesh_area,radius): 
     """ Calculates WVF for a key that is on a face """ 
     normal = envuo.py3dmodel.construct.make_vector((0,0,0),envuo.py3dmodel.calculate.face_normal(face))
-    ped2surf = envuo.py3dmodel.construct.make_vector(pedestrian, key)
-    return mesh_area*abs(normal.Dot(ped2surf.Normalized()))/ (4*np.pi*ped2surf.Magnitude()**2)
+    surf2ped = envuo.py3dmodel.construct.make_vector(key,pedestrian)
+    sa_ped = 4.0*np.pi*radius**2
+    theta = normal.Angle(surf2ped)
+    h = surf2ped.Magnitude()/radius 
+    phi = np.arctan(1/h)
+    threshold = np.pi/2.0 - phi
 
-
+    if abs(h*np.cos(theta)) > 1:
+        F = abs(np.cos(theta))/h**2; 
+    else:
+        x = np.sqrt(h**2-1)/np.tan(theta) #np.sqrt(h**2-1)
+        y = np.sqrt(1-x**2) #-x/np.tan(theta) #
+        F = (np.pi - abs(np.cos(x)) - x*y*np.tan(theta)**2)*abs(np.cos(theta))/(np.pi*h**2) + np.arctan(y*abs(np.cos(theta))/x)/np.pi; 
+        print pedestrian,' passes threshold'
+    return mesh_area*F/sa_ped
+    
 def wallviewfactors(pedestrian, keys, faces, mesh_area):
     print "***Generating wall view factors at", pedestrian
     visdic = {}
@@ -73,18 +91,6 @@ def wallviewfactors(pedestrian, keys, faces, mesh_area):
         except (RuntimeError, UnboundLocalError): print "Not this one"
     return visdic
 
-
-def visible_surf(dic, pedestrian, faces):
-    """ returns a dictionary of visible surface values, ie not blocked by other buildings. model should be a compound."""
-    visdic={}
-    for key, value in dic.iteritems():
-        line = envuo.py3dmodel.construct.make_edge(pedestrian, key)
-        intercept = sum([envuo.py3dmodel.calculate.intersect_edge_with_face(line, face[0]) for face in faces if not envuo.py3dmodel.calculate.point_in_face(key,face[0])],[])
-        if len(intercept)==0: #if direction does not intersect any other walls
-            visdic.update({key: value})
-        else:  pass
-    print 'Visibility Done'   
-    return visdic
 
 #def get_SET(model,SurfaceTemperatures,AirTemperatures,Pressure,Velocity,time_str,latitude,longitude)
 
