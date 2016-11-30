@@ -1,7 +1,7 @@
 '''
 Created on Jul 21, 2016
 
-@author: ctpp
+@author: Tiangang Yin
 '''
 
 import argparse
@@ -167,26 +167,17 @@ class tgDirs(object):
     
     def getNbDir(self):
         return self.nbDirs
-        
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='tiangangDirs.py', description='Using Iterative Square Uniform Discretization (IUSD) approach to generate sphere/hemisphere sampling of equal solid angles')
-    parser.add_argument('nbDirs', type=int, help='Number of predefined directions')
-#     parser.add_argument('-minw', '--minWavelength', type=float, help='Define the minimum wavelength range in um (default: 0.1)')  
-          
-    args = parser.parse_args()
-    if args.nbDirs:
-        obj = tgDirs(args.nbDirs);
-#         obj.__listDir
-        obj.printDirList(2)
-    
-unitball = tgDirs(500)
+#        
+#if __name__ == '__main__':
+#    parser = argparse.ArgumentParser(prog='fourpispace.py', description='Using Iterative Square Uniform Discretization (IUSD) approach to generate sphere/hemisphere sampling of equal solid angles')
+#    parser.add_argument('nbDirs', type=int, help='Number of predefined directions')
+##     parser.add_argument('-minw', '--minWavelength', type=float, help='Define the minimum wavelength range in um (default: 0.1)')  
+#          
+#    args = parser.parse_args()
+#    if args.nbDirs:
+#        obj = tgDirs(args.nbDirs);
+##         obj.__listDir
+#        obj.printDirList(2)
+##    
 
-def skyviewfactor(ped, model):
-    visible=0.; blocked = 0.;
-    for direction in unitball.getDirList():
-        (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = envuo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
-        if occ_interpt != None: blocked +=1.0
-        else: visible +=1.0
-    svf = (visible)/(visible+blocked);
-    return svf
+
