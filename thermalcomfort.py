@@ -31,6 +31,7 @@ from OCC.Display import OCCViewer
 Ndir = 500
 unitball = fpi.tgDirs(Ndir)
 sigma =5.67*10**(-8)
+RH = 50
 #%% Data is handled as pandas dataframes with x, y, z, and value columns
 
 def read_pdcoord(cfd_inputfile,separator = ','):
@@ -89,7 +90,7 @@ class pdcoord(object):
         
         return fig
         
-    def contour(self,title='',model=[], zmax = None, zmin = None):
+    def contour(self,title='',model=[], zmax = None, zmin = None, filename = None):
         #self.data.v.fillna(0) =         
         xi = np.linspace(min(self.data.x), max(self.data.x),len(self.data))
         yi = np.linspace(min(self.data.y), max(self.data.y),len(self.data))
@@ -102,21 +103,41 @@ class pdcoord(object):
         plt.contour(xi, yi, zi, 15, linewidths = 0, colors = 'k')
         plt.pcolormesh(xi, yi, zi, cmap = plt.get_cmap('rainbow'),vmax = zmax, vmin = zmin)
         plt.colorbar()        
-        
+
         try:
             vertices = [(vertex.X(), vertex.Y()) for vertex in envuo.py3dmodel.fetch.vertex_list_2_point_list(envuo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
             shape = patches.PathPatch(Path(vertices), facecolor='white', lw=2)
             plt.gca().add_patch(shape)
         except TypeError:
             pass
-        return fig
         
+        try:
+            fig.savefig(filename)
+        except TypeError:
+            return fig
+    
 
     
 #%% Radiation Model Functions
+Ndir = 500
+unitball = fpi.tgDirs(Ndir)
+sigma =5.67*10**(-8)
 
-def solar_param(time_str,latitude,longitude):
-    time = pd.Timestamp(time_str[0], tz=time_str[1])  
+"""
+1) Calculate solar parameters
+2) Calculate shadows, output pdcoord of shaded areas
+For each pedestrian location:
+3) Use fourpiradiation() to calculate sky view factor, list of visible intecept, and number of remaining directions that hit the ground (groundN)
+4) Use call_values to call values of Ts, reflect, wall_albedo, wall_emissivity at intecepted locations on building surfaces
+5) Use calc_radiation_from_values() to return longwave and shortwave radiation from surfaces
+6) Use wall_emissivity*sigma*Ts**4*groundN/Ndir to calculate remaining ground longwave radiation
+7) Use E_dif*solarvf + E_sol*solarvf*shadowint for direct and diffuse solar radiation
+8) Tmrt = ((Eshort*(1-ped_albedo)+Elong)/sigma)**(1/4.)
+
+ """
+def solar_param((y,mo,d,h,mi),latitude,longitude, UTC_diff=0, groundalbedo=0.18):
+    time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
+    time = pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')  
     zenith = pvlib.solarposition.get_solarposition(time, latitude,longitude).zenith[0]
     altitude = pvlib.solarposition.get_solarposition(time, latitude,longitude).elevation[0]
     azimuth = pvlib.solarposition.get_solarposition(time, latitude,longitude).azimuth[0]
@@ -125,26 +146,27 @@ def solar_param(time_str,latitude,longitude):
     sunpx = hyp*np.sin(np.radians(azimuth))
     solar_pmt =  pvlib.clearsky.ineichen(time, latitude, longitude)
     E_sol= solar_pmt.dni[0] #direct normal solar irradiation  [W/m^2]
-    GroundReflect_V = pvlib.irradiance.grounddiffuse(90,solar_pmt.ghi,albedo =0.18)[0]  #Ground Reflected Solar Irradiation - vertical asphalt surface [W/m^2]
+    GroundReflect_V = pvlib.irradiance.grounddiffuse(90,solar_pmt.ghi,albedo =groundalbedo)[0]  #Ground Reflected Solar Irradiation - vertical asphalt surface [W/m^2]
     Diffuse_V =  pvlib.irradiance.isotropic(90, solar_pmt.dhi)[0] #Diffuse Solar Irradiation - vertical surface[W/m^2]. isotropic not v accurate
-    E_di = GroundReflect_V + Diffuse_V;     
-    sin_bita=(sunpz/((sunpx)**2+(sunpy)**2+(sunpz)**2)**(0.5));
-    cos_bita=(sunpz/((sunpx)**2+(sunpy)**2+(sunpz)**2)**(0.5));
-    sin_alpha=abs(sunpx)/((sunpx)**2+(sunpy)**2)**(0.5);
-    cos_alpha=abs(sunpy)/((sunpx)**2+(sunpy)**2)**(0.5);
-    solarvf=0.0355*sin_bita+2.33*cos_bita*(0.0213*cos_alpha**2+0.00919*sin_alpha**2)**(0.5);      
+    E_di = GroundReflect_V + Diffuse_V;         
+    #Formula 9 in Huang et. al. for a standing person, largely independent of gender, body shape and size. For a sitting person, approximately 0.25
+    solarvf=abs(0.0355*np.sin(altitude)+2.33*np.cos(altitude)*(0.0213*np.cos(azimuth)**2+0.00919*np.sin(azimuth)**2)**(0.5)); 
     return zenith,altitude,azimuth,  sunpx, sunpy,sunpz,E_sol, E_di, solarvf
-    
-#def get_shadow(pedestrian_keys, model,solar_vector):
-#    """ Returns a dictionary of shadowed (0) and sunlit (1) locations. Ignores points that are on the wall (treats them as not shadowed)  """
-#    shadow = {}
-#    for key in pedestrian_keys:
-#        occ_interpt, occ_interface = envuo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solar_vector)
-#        if occ_interpt != None: shadow.update({key: 0}) 
-#        else: shadow.update({key:1})
-#    return shadow
+
+def check_shadow(key, model, solarvector):
+    occ_interpt, occ_interface = envuo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solarvector)
+    if occ_interpt != None: return 0
+    else: return 1 
+
+def get_shadow(pedestrian_keys, model,solar_vector):
+    """ Returns a dataframe of shadowed (0) and sunlit (1) locations. Ignores points that are on the wall (treats them as not shadowed)  """
+    shadow = pdcoord(zip(pedestrian_keys.transpose()[0], pedestrian_keys.transpose()[1], pedestrian_keys.transpose()[2],np.zeros(len(pedestrian_keys)) ))
+    shadow.data['v'] = shadow.data.apply(lambda row: check_shadow((row['x'], row['y'], row['z']),model, solar_vector), axis=1)
+    return shadow
+
 
 def skyviewfactor(ped, model):
+    """ This function is replaced by fourpiradiation, which combines the calculation with groundview and wall visibility """
     visible=0.; blocked = 0.;
     for direction in unitball.getDirUpperHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
@@ -177,42 +199,24 @@ def call_values(intercepts, surfpdcoord, gridsize):
     visibletemps = [surfpdcoord.val_at_coord(target,gridsize).v.mean() for target in intercepts]
     return visibletemps
     
-def calc_radiation_from_intercepts(SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity):
+def calc_radiation_from_values(SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity):
     """ List of values for visible surface parameters. returns long and shortwave radiative components. Assumes that lists are in order and of the same length"""
     longwave =  sum([emissivity*sigma*temp**4/Ndir for temp, emissivity in zip(SurfTemp,SurfEmissivity)])
-    shortwave =  sum([(albedo)*(reflect)/Ndir for reflect, albedo in zip(SurfReflect, SurfAlbedo)])
+    shortwave =  sum([albedo*reflect/Ndir for reflect, albedo in zip(SurfReflect, SurfAlbedo)])
     return longwave, shortwave
+
+def calc_Esky_emis(Ta):
+    """ returns scalar of longwave radiation from the sky, that needs to be factored by SVF  """
+    vp = RH*6.1121*np.exp((18.678-(Ta-273.2)/234.4)*(Ta-273.2)/(Ta-273.2+257.14))/1000
+    skyemis = 1.24*(vp/Ta)**(1/7.)
+    Esky = sigma*skyemis*(Ta**4)*(0.82-0.25*10**(-0.0945*vp))
+    return Esky
+
+def meanradtemp(Esky,Esurf, Eground,Ediffuse,Edirect,Ereflect, SVF, solarVF, pedestrian_albedo, shadow=False):
+    Eshort =  Ediffuse*SVF/2 + Edirect*solarVF*shadow+ Ereflect 
+    Elong = Esky*SVF/2+Esurf+Eground
     
-#def call_emiss(intercepts, Ts, gridsize, emisscoord,E_sol,E_dif ):
-#    """ Given a list of intercepts, a pdcoord of surface emissivities, and the grid size of the surface temperatures, a pdframe of values at intercepts is returned """
-#    visibleemiss = [emisscoord.val_at_coord(target,gridsize).v.mean() for target in intercepts]
-#    #vis_pd = pdcoord(zip(intercepts.transpose()[0], intercepts.transpose()[1], intercepts.transpose()[2], visibletemps))
-#    longwave = sum([emissivity*sigma*Ts**4/Ndir for emissivity in visibleemiss]) #longwave
-#    shortwave =  sum([(1-emissivity)*(E_sol+E_dif)/Ndir for emissivity in visibleemiss])
-#    return longwave, shortwave
-
-def thermal_radiation(ped, model, surf_data, gridsize):
-    """ outputs total thermal radiation [W/m2] on a pedestrian at a single location """
-    intercepts = alldirections(ped,model)
-    vis_temps = call_temp(intercepts, surf_data,gridsize)
-    radiation = sigma*vis_temps[vis_temps.v.notnull()].v**4/(len(vis_temps[vis_temps.v.notnull()]))
-    return radiation.v.sum()
-        
-def meanradtemp(pedkeys, shadowdic, svf, T_surf, R_surf, Ta):
-    vp = 50*6.1121*np.exp((18.678-(Ta-273.2)/234.4)*(Ta-273.2)/(Ta-273.2+257.14))/1000
-    E_sky = (Ta**4)*(0.82-0.25*10**(-0.00945*vp))
-    sky_emis= 1.72*(vp/Ta)**(1/7.)
-    Edf = pd.DataFrame(index=pedkeys, columns=('E_surf', 'E_r'))
-    Tmrt = pdcoord(zip(pedkeys.transpose()[0], pedkeys.transpose()[1], pedkeys.transpose()[2],np.zeros(len(pedkeys)) ))
-
-    print 'Calculating surface radiation at ', ped 
-    for ped in pedkeys:
-        print 'Calculating surface radiation at ', tuple(ped) 
-        svf, groundN, wallintercepts = fourpiradiation(pedkeys[i], compound)
-        Eground = groundN*ground_emis*sigma*groundtemp**4/500
-
-        
-    t_mrt=((shadowdic*E_sol*solarvf+E_dif*svf+sum(E_r.v))*(1-albedo)/sigma+sky_emis*E_sky*svf+sum(E_g.v))**(1/4.); 
+    t_mrt= ((Eshort*(1-pedestrian_albedo)+Elong)/sigma)**(1/4.)   
     return t_mrt
 
 #%% SET Calculations 
