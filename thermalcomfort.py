@@ -18,20 +18,16 @@ import matplotlib.patches as patches
 
 import numpy as np
 import pandas as pd
-import envuo
+import pyliburo
 import pvlib
 import fourpispace as fpi
-import csv
 
-from pvlib import solarposition as sp
-from pvlib import irradiance as ir
-from pvlib import clearsky as csky
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
-Ndir = 500
+Ndir = 150
 unitball = fpi.tgDirs(Ndir)
 sigma =5.67*10**(-8)
-RH = 50
+
 #%% Data is handled as pandas dataframes with x, y, z, and value columns
 
 def read_pdcoord(cfd_inputfile,separator = ','):
@@ -50,14 +46,22 @@ def read_pdcoord(cfd_inputfile,separator = ','):
     cfd_input.sortlevel(axis=0,inplace=True,sort_remaining=True)
     return cfd_input
 
+font = {'family' : 'normal',
+        'weight' : 'medium',
+        'size'   : 22}
+
 class pdcoord(object):
     """ Class for all x,y,z,v input files used in thermal comfort analysis. To initialize an empty pdcoord, put 0 instead of data """
+    
     def __init__(self, csv_input, sep =','):
 #        self.name = name
         self.data = read_pdcoord(csv_input,separator = sep)
-
-    def empty(self):
-        self.data = pd.DataFrame(columns = ['x','y','z','v'])
+    
+    def recenter_to_origin(self):
+        print 'shifted by x:' ,min(self.data.x), ' and y:',min(self.data.y)
+        self.data['x'] = self.data['x'] - min(self.data.x)
+        self.data['y'] = self.data['y'] - min(self.data.y)
+        return self
 
     def val_at_coord(self,listcoord, radius = 0.):
         """ Enter coordinates as a list. If only X or only X,Y are given, returns selected dataframe. Range of selection can be widened with a radius.  """
@@ -71,6 +75,7 @@ class pdcoord(object):
             except ValueError: print "No entry matches that coordinate" 
 
     def scatter3d(self,title='',size=40,model=[]):
+        plt.rc('font', **font)
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d'); ax.pbaspect = [1, 1, 1] #always need pbaspect
         ax.set_title(title)
@@ -81,7 +86,7 @@ class pdcoord(object):
         
         plt.draw()
         try:
-            vertices = [(vertex.X(), vertex.Y(),vertex.Z()) for vertex in envuo.py3dmodel.fetch.vertex_list_2_point_list(envuo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
+            vertices = [(vertex.X(), vertex.Y(),vertex.Z()) for vertex in pyliburo.py3dmodel.fetch.vertex_list_2_point_list(pyliburo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
             V1,V2,V3 = zip(*vertices)            
             p = ax.plot_wireframe(V1,V2,V3 )
 
@@ -91,7 +96,7 @@ class pdcoord(object):
         return fig
         
     def contour(self,title='',model=[], zmax = None, zmin = None, filename = None):
-        #self.data.v.fillna(0) =         
+        plt.rc('font', **font)
         xi = np.linspace(min(self.data.x), max(self.data.x),len(self.data))
         yi = np.linspace(min(self.data.y), max(self.data.y),len(self.data))
         
@@ -105,8 +110,8 @@ class pdcoord(object):
         plt.colorbar()        
 
         try:
-            vertices = [(vertex.X(), vertex.Y()) for vertex in envuo.py3dmodel.fetch.vertex_list_2_point_list(envuo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
-            shape = patches.PathPatch(Path(vertices), facecolor='white', lw=2)
+            vertices = [(vertex.X(), vertex.Y()) for vertex in pyliburo.py3dmodel.fetch.vertex_list_2_point_list(pyliburo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
+            shape = patches.PathPatch(Path(vertices), facecolor='white', lw=0)
             plt.gca().add_patch(shape)
         except TypeError:
             pass
@@ -116,12 +121,15 @@ class pdcoord(object):
         except TypeError:
             return fig
     
-
+def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
+    """ fills a pdcoord from numpy arrays """
+    if not values.size:
+        fill = [np.nan]*len(pedkeys)
+    else: fill = values
+    empty = pdcoord(zip(pedkeys.transpose()[0], pedkeys.transpose()[1], pedkeys.transpose()[2],fill))
+    return empty
     
 #%% Radiation Model Functions
-Ndir = 500
-unitball = fpi.tgDirs(Ndir)
-sigma =5.67*10**(-8)
 
 """
 1) Calculate solar parameters
@@ -137,24 +145,25 @@ For each pedestrian location:
  """
 def solar_param((y,mo,d,h,mi),latitude,longitude, UTC_diff=0, groundalbedo=0.18):
     time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
-    time = pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')  
-    zenith = pvlib.solarposition.get_solarposition(time, latitude,longitude).zenith[0]
-    altitude = pvlib.solarposition.get_solarposition(time, latitude,longitude).elevation[0]
-    azimuth = pvlib.solarposition.get_solarposition(time, latitude,longitude).azimuth[0]
-    sunpz = np.sin(np.radians(altitude)); hyp = np.cos(np.radians(altitude))
-    sunpy = hyp*np.cos(np.radians(azimuth))
-    sunpx = hyp*np.sin(np.radians(azimuth))
-    solar_pmt =  pvlib.clearsky.ineichen(time, latitude, longitude)
+    thistime = pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
+    thisloc = pvlib.location.Location(latitude, longitude, tz='UTC', altitude=0, name=None)
+    solpos = thisloc.get_solarposition(thistime)    
+    
+    sunpz = np.sin(np.radians(solpos.elevation[0])); hyp = np.cos(np.radians(solpos.elevation[0]))
+    sunpy = hyp*np.cos(np.radians(solpos.azimuth[0]))
+    sunpx = hyp*np.sin(np.radians(solpos.azimuth[0]))
+    
+    solar_pmt =  thisloc.get_clearsky(thistime,model='ineichen') #
     E_sol= solar_pmt.dni[0] #direct normal solar irradiation  [W/m^2]
-    GroundReflect_V = pvlib.irradiance.grounddiffuse(90,solar_pmt.ghi,albedo =groundalbedo)[0]  #Ground Reflected Solar Irradiation - vertical asphalt surface [W/m^2]
-    Diffuse_V =  pvlib.irradiance.isotropic(90, solar_pmt.dhi)[0] #Diffuse Solar Irradiation - vertical surface[W/m^2]. isotropic not v accurate
-    E_di = GroundReflect_V + Diffuse_V;         
+    Ground_Diffuse = pvlib.irradiance.grounddiffuse(90,solar_pmt.ghi,albedo =groundalbedo)[0]  #Ground Reflected Solar Irradiation - vertical asphalt surface [W/m^2]
+    Sky_Diffuse =  pvlib.irradiance.isotropic(90, solar_pmt.dhi)[0] #Diffuse Solar Irradiation - vertical surface[W/m^2].        
+    
     #Formula 9 in Huang et. al. for a standing person, largely independent of gender, body shape and size. For a sitting person, approximately 0.25
-    solarvf=abs(0.0355*np.sin(altitude)+2.33*np.cos(altitude)*(0.0213*np.cos(azimuth)**2+0.00919*np.sin(azimuth)**2)**(0.5)); 
-    return zenith,altitude,azimuth,  sunpx, sunpy,sunpz,E_sol, E_di, solarvf
+    solarvf=abs(0.0355*np.sin(solpos.elevation[0])+2.33*np.cos(solpos.elevation[0])*(0.0213*np.cos(solpos.azimuth[0])**2+0.00919*np.sin(solpos.azimuth[0])**2)**(0.5)); 
+    return sunpx, sunpy,sunpz, solarvf, E_sol, Sky_Diffuse, Ground_Diffuse
 
 def check_shadow(key, model, solarvector):
-    occ_interpt, occ_interface = envuo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solarvector)
+    occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solarvector)
     if occ_interpt != None: return 0
     else: return 1 
 
@@ -164,13 +173,12 @@ def get_shadow(pedestrian_keys, model,solar_vector):
     shadow.data['v'] = shadow.data.apply(lambda row: check_shadow((row['x'], row['y'], row['z']),model, solar_vector), axis=1)
     return shadow
 
-
 def skyviewfactor(ped, model):
     """ This function is replaced by fourpiradiation, which combines the calculation with groundview and wall visibility """
     visible=0.; blocked = 0.;
     for direction in unitball.getDirUpperHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = envuo.py3dmodel.calculate.intersect_shape_with_ptdir(model['model'],ped,(X,Y,Z))
+        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model['model'],ped,(X,Y,Z))
         if occ_interpt != None: blocked +=1.0
         else: visible +=1.0
     svf = (visible)/(visible+blocked);
@@ -180,19 +188,22 @@ def fourpiradiation(ped, model):
     """ returns SVF, number of ground points (N), and list of intercepts. 
     For uniform ground temperature, do not include ground surface in model. Longwave irradiance from ground can be calculated as emissivity*sigma*groundtemp**4*N/Ndir 
     If ground temperature is not uniform, include the ground in the model, and radiation will be calculated with the other surfaces. """ 
-    visible=0.; ground = 0.; intercepts=[]
+    sky=0.; ground = 0.; intercepts=[]
     for direction in unitball.getDirUpperHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = envuo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
+        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
         if occ_interpt != None: intercepts.append([occ_interpt.X(), occ_interpt.Y(), occ_interpt.Z()])
-        else: visible +=1.0
+        else: sky +=1.0
     for direction in unitball.getDirLowerHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = envuo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
-        if occ_interpt != None: intercepts.append([occ_interpt.X(), occ_interpt.Y(), occ_interpt.Z()])
+        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
+        if occ_interpt != None: 
+            intercepts.append([occ_interpt.X(), occ_interpt.Y(), occ_interpt.Z()])
+            ground += int(int(occ_interpt.Z())==0) #if ground is included in model 
         else: ground +=1.0
-    svf = (visible)/(len(unitball.getDirUpperHemisphere()));
-    return svf, ground, np.array(intercepts)
+    SVF = (sky)/(len(unitball.getDirUpperHemisphere()));
+    GVF = (ground)/(len(unitball.getDirLowerHemisphere()));
+    return SVF, GVF, np.array(intercepts)
 
 def call_values(intercepts, surfpdcoord, gridsize):
     """ Given a list of intercepts, a pdcoord of surface values, and the grid size, a list of values is returned """
@@ -205,20 +216,65 @@ def calc_radiation_from_values(SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity
     shortwave =  sum([albedo*reflect/Ndir for reflect, albedo in zip(SurfReflect, SurfAlbedo)])
     return longwave, shortwave
 
-def calc_Esky_emis(Ta):
+def calc_Esky_emis(Ta,RH):
     """ returns scalar of longwave radiation from the sky, that needs to be factored by SVF  """
     vp = RH*6.1121*np.exp((18.678-(Ta-273.2)/234.4)*(Ta-273.2)/(Ta-273.2+257.14))/1000
     skyemis = 1.24*(vp/Ta)**(1/7.)
     Esky = sigma*skyemis*(Ta**4)*(0.82-0.25*10**(-0.0945*vp))
     return Esky
 
-def meanradtemp(Esky,Esurf, Eground,Ediffuse,Edirect,Ereflect, SVF, solarVF, pedestrian_albedo, shadow=False):
-    Eshort =  Ediffuse*SVF/2 + Edirect*solarVF*shadow+ Ereflect 
+def meanradtemp(Esky,Esurf, Eground,Sky_Diffuse, Ground_Diffuse,Edirect,Ereflect, SVF, GVF, solarVF, pedestrian_albedo, shadow=False):
+    Eshort =  Sky_Diffuse*SVF/2 + Ground_Diffuse*GVF/2 + Edirect*solarVF*shadow+ Ereflect 
     Elong = Esky*SVF/2+Esurf+Eground
-    
     t_mrt= ((Eshort*(1-pedestrian_albedo)+Elong)/sigma)**(1/4.)   
     return t_mrt
 
-#%% SET Calculations 
 
-#def get_SET(model,SurfaceTemperatures,AirTemperatures,Pressure,Velocity,time_str,latitude,longitude)
+#%% SET Calculations 
+k=0.155; #unit conversion factor
+pt=101.325;   #local atmosphere presssure in kPa
+
+def calc_SET(microclimate,ped_constants,ped_properties):
+    """
+    Parameters
+    ---------
+    ped_properties:  DataFrame with columns 
+    ped_constants: Properties of a typical standing person. Dataframe with columns       'eff_radiation_surface_area_ratio'
+    microclimate: DataFrame with columns        'air_temperature','wind_speed','mean_radiant_temperature','mean_static_pressure'
+    """
+    Ta = microclimate['T_air']
+    microclimate['water_vapor_pressure'] = wpa = np.exp(20.386-5132/Ta)*.133322368
+    H = ped_constants['met'] - ped_constants['work']  
+    pssk=np.exp(20.386-5132/ped_properties['T_skin'])*.133322368 #water vapor pressure at skin; units in kPa
+    ped_properties['T_clothing'] = tcl = ped_properties['T_skin'] \
+        - 0.0275*(H)\
+        - k*ped_constants['Rcl']*((H)-3.05*(5.73-0.007*(H)-wpa) \
+        - 0.42*((H)-58.15) \
+        - 0.0173*ped_constants['met']*(5.87-wpa) \
+        - 0.0014*ped_constants['met']*(34-Ta)) #cloth temperature [K]
+    ped_properties['Lewis_ratio'] = lr = 15.15*ped_properties['T_skin']/273.2 
+    Recl=ped_constants['Rcl']/(lr*ped_constants['icl'])  
+    
+    # heat transfer coefficients and operative temperature, pressure
+    hsc=8.6*(microclimate['wind_speed']**0.53)*(pt/101.33)**.55; #W/m**2*kPa corrected convective transfer coefficients for sensible heat, 0.15<v<1.5, for standing pedestrian
+    he=lr*hsc;  #evaporate heat transfer coefficient
+    hesp=he*(101.33/microclimate['mean_static_pressure'])**0.45; ##standard evaporate heat transfer coefficient, from Gagge,1986     
+    hr=4*ped_constants['body_emis']*sigma*ped_constants['eff_radiation_SA_ratio']*((tcl+microclimate['mean_radiant_temperature'])/2.)**3;   #radiative heat transfer coefficient
+    hz=hr+hsc;
+    Ia=1./(hz*ped_constants['fcl']);   #intrinsic insulation of the air layer
+    hp=1./(Ia+ped_constants['Rcl']);   #Sensible Heat Transfer Coefficient
+    Rea=1/(lr*ped_constants['fcl']*hsc);
+    hep=1/(Rea+Recl);    #insensible heat transfer coefficient
+    hsp=hp+hr; #overall sensible heat transfer caefficient            
+        
+    #Operative temperature and pressure
+    to=(hr*microclimate['mean_radiant_temperature']+hsc*Ta)/(hr+hsc) #operative temperature
+    ttso=(hp/hsp)*(to-273.2)+(1-hp/hsp)*(ped_properties['T_skin']-273.2)  #standard operative temperature[C]
+    ppso=(hep/hesp)*wpa+(1.-hsp/hesp)*pssk; #standard operative pressure
+    
+    func = lambda st : (ttso - st -(ped_properties['skin_wetness']*(hesp+hsc)/hsp)*(ppso-0.5*.133322368*np.exp(20.386-5132/( st+273.2))))
+    try:
+        s_set = fsolve(func,0)[0] +273.2
+    except: s_set = np.nan
+    return s_set
+

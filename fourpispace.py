@@ -7,7 +7,6 @@ Created on Jul 21, 2016
 import argparse
 import math
 import numpy as np
-import envuo
 pi2 = math.pi*2
 
 def wrapTo2PI(stradiance):
