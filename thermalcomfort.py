@@ -24,7 +24,7 @@ import fourpispace as fpi
 
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
-Ndir = 150
+Ndir = 500
 unitball = fpi.tgDirs(Ndir)
 sigma =5.67*10**(-8)
 
@@ -46,8 +46,7 @@ def read_pdcoord(cfd_inputfile,separator = ','):
     cfd_input.sortlevel(axis=0,inplace=True,sort_remaining=True)
     return cfd_input
 
-font = {'family' : 'normal',
-        'weight' : 'medium',
+font = {'weight' : 'medium',
         'size'   : 22}
 
 class pdcoord(object):
@@ -160,7 +159,14 @@ def solar_param((y,mo,d,h,mi),latitude,longitude, UTC_diff=0, groundalbedo=0.18)
     
     #Formula 9 in Huang et. al. for a standing person, largely independent of gender, body shape and size. For a sitting person, approximately 0.25
     solarvf=abs(0.0355*np.sin(solpos.elevation[0])+2.33*np.cos(solpos.elevation[0])*(0.0213*np.cos(solpos.azimuth[0])**2+0.00919*np.sin(solpos.azimuth[0])**2)**(0.5)); 
-    return sunpx, sunpy,sunpz, solarvf, E_sol, Sky_Diffuse, Ground_Diffuse
+    results = pd.DataFrame({
+    'solarvector':[(sunpx,sunpy,sunpz)],
+    'solarviewfactor':[solarvf],
+    'direct_sol':[E_sol],
+    'diffuse_frm_sky':[Sky_Diffuse],
+    'diffuse_frm_ground':[Ground_Diffuse]
+    })    
+    return results
 
 def check_shadow(key, model, solarvector):
     occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solarvector)
@@ -178,7 +184,7 @@ def skyviewfactor(ped, model):
     visible=0.; blocked = 0.;
     for direction in unitball.getDirUpperHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model['model'],ped,(X,Y,Z))
+        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
         if occ_interpt != None: blocked +=1.0
         else: visible +=1.0
     svf = (visible)/(visible+blocked);
@@ -223,12 +229,32 @@ def calc_Esky_emis(Ta,RH):
     Esky = sigma*skyemis*(Ta**4)*(0.82-0.25*10**(-0.0945*vp))
     return Esky
 
-def meanradtemp(Esky,Esurf, Eground,Sky_Diffuse, Ground_Diffuse,Edirect,Ereflect, SVF, GVF, solarVF, pedestrian_albedo, shadow=False):
-    Eshort =  Sky_Diffuse*SVF/2 + Ground_Diffuse*GVF/2 + Edirect*solarVF*shadow+ Ereflect 
+def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_albedo, shadow=False):
+    Eshort =  solarparam.diffuse_frm_sky[0]*SVF/2 + solarparam.diffuse_frm_ground[0]*GVF/2 + solarparam.direct_sol[0]*solarparam.solarviewfactor[0]*shadow+ Ereflect 
     Elong = Esky*SVF/2+Esurf+Eground
     t_mrt= ((Eshort*(1-pedestrian_albedo)+Elong)/sigma)**(1/4.)   
     return t_mrt
 
+def all_mrt(pedkey,compound,pdTa,solarparam,model_inputs):
+    """ Accepts dataframe of solar parameters, model inputs"""
+    Esky = calc_Esky_emis(pdTa.val_at_coord(pedkey).v, RH)
+    svf, gvf, intercepts = fourpiradiation(pedkey, compound) #interceptped        
+    shadowint = check_shadow(pedkey, compound,solarparam.solarvector[0])
+        
+    SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity = [[x]*len(intercepts) for x in [model_inputs.surftemp[0], solarparam.direct_sol[0], model_inputs.wall_albedo[0], model_inputs.wall_emissivity[0]]] #instead of call values
+    Elwall, Eswall = calc_radiation_from_values(SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity)
+    Eground = model_inputs.ground_emissivity[0]*sigma*gvf/2*model_inputs.groundtemp[0]**4
+    
+    TMRT =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam,svf,gvf, ped_constants.body_albedo[0], shadow=shadowint)
+    
+    results = pd.DataFrame({
+    'TMRT':[TMRT],
+    'SVF':[svf],
+    'Elwall':[Elwall],
+    'Eswall':[Eswall],
+    'Eground':[Eground]
+    })    
+    return results
 
 #%% SET Calculations 
 k=0.155; #unit conversion factor
