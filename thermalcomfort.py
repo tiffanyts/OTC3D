@@ -24,9 +24,9 @@ import fourpispace as fpi
 
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
-Ndir = 500
+Ndir = 250
 unitball = fpi.tgDirs(Ndir)
-sigma =5.67*10**(-8)
+sigma =5.    *10**(-8)
 
 #%% Data is handled as pandas dataframes with x, y, z, and value columns
 
@@ -61,6 +61,34 @@ class pdcoord(object):
         self.data['x'] = self.data['x'] - min(self.data.x)
         self.data['y'] = self.data['y'] - min(self.data.y)
         return self
+    
+    def repeat_clockwise(self,unit=1):
+        """ extends pdcoord to quadrants 2,1,4 for repeating data"""
+        shiftright = max(self.data.x) - min(self.data.x) + unit
+        shiftdown = max(self.data.y) - min(self.data.y) + unit
+        
+
+        Q1 = pd.DataFrame(np.array([self.data.x+shiftright, 
+                           self.data.y,
+                           self.data.z, 
+                           self.data.v]).T, 
+                           columns = ['x','y','z','v'])
+        Q2 = pd.DataFrame(np.array([self.data.x+shiftright, 
+                           self.data.y-shiftdown,
+                           self.data.z, 
+                           self.data.v]).T, 
+                           columns = ['x','y','z','v'])
+        Q3 = pd.DataFrame(np.array([self.data.x, 
+                           self.data.y-shiftdown,
+                           self.data.z, 
+                           self.data.v]).T, 
+                           columns = ['x','y','z','v'])
+        
+        self.data =self.data.append(Q1,ignore_index=True)
+        self.data =self.data.append(Q2,ignore_index=True)
+        self.data =self.data.append(Q3,ignore_index=True)
+        
+        return self
 
     def val_at_coord(self,listcoord, radius = 0.):
         """ Enter coordinates as a list. If only X or only X,Y are given, returns selected dataframe. Range of selection can be widened with a radius.  """
@@ -78,7 +106,7 @@ class pdcoord(object):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d'); ax.pbaspect = [1, 1, 1] #always need pbaspect
         ax.set_title(title)
-        p = ax.scatter(list(self.data.x), list(self.data.y),list(self.data.z),c = list(self.data.v),edgecolors='none', s=size, marker = ",") #*abs((Y-B)*mww)
+        p = ax.scatter(list(self.data.x), list(self.data.y),list(self.data.z),c = list(self.data.v),edgecolors='none', s=size, marker = ",")
         ax.view_init(elev=90, azim=-89)
         ax.set_xlabel('X axis'); ax.set_ylabel('Y axis'); ax.set_zlabel('Z axis')
         fig.colorbar(p)
@@ -94,15 +122,17 @@ class pdcoord(object):
         
         return fig
         
-    def contour(self,title='',model=[], zmax = None, zmin = None, filename = None):
+    def contour(self,title='',model=[], zmax = None, zmin = None, filename = None, lowres = 1):
+        """ filename to save image. lowres to reduce resolution (high integer is lower resolution)"""
         plt.rc('font', **font)
-        xi = np.linspace(min(self.data.x), max(self.data.x),len(self.data))
-        yi = np.linspace(min(self.data.y), max(self.data.y),len(self.data))
+        xi = np.linspace(min(self.data.x), max(self.data.x),len(set(self.data)))
+        yi = np.linspace(min(self.data.y), max(self.data.y),len(set(self.data)))
         
-        zi = ml.griddata(self.data.x, self.data.y, self.data.v.interpolate(), xi, yi,interp='linear')
+    
+#        zi = ml.griddata(self.data.x, self.data.y, self.data.v.interpolate(), xi, yi,interp='linear')
         
         #xi, yi = np.meshgrid(self.data.x, self.data.y)
-        fig =  plt.figure()
+        fig = plt.figure()
         plt.title(title)
         plt.contour(xi, yi, zi, 15, linewidths = 0, colors = 'k')
         plt.pcolormesh(xi, yi, zi, cmap = plt.get_cmap('rainbow'),vmax = zmax, vmin = zmin)
@@ -120,12 +150,16 @@ class pdcoord(object):
         except TypeError:
             return fig
     
+#    def plot_along_line(self,X,Y, tick_list):
+#        V = self.data.v
+#        plt.plot(heights, SVFs_can, label='Canyon')
+    
 def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
     """ fills a pdcoord from numpy arrays """
     if not values.size:
-        fill = [np.nan]*len(pedkeys)
+        fill = [np.nan]*len(pedkeys_np)
     else: fill = values
-    empty = pdcoord(zip(pedkeys.transpose()[0], pedkeys.transpose()[1], pedkeys.transpose()[2],fill))
+    empty = pdcoord(zip(pedkeys_np.transpose()[0], pedkeys_np.transpose()[1], pedkeys_np.transpose()[2],fill))
     return empty
     
 #%% Radiation Model Functions
@@ -167,6 +201,7 @@ def solar_param((y,mo,d,h,mi),latitude,longitude, UTC_diff=0, groundalbedo=0.18)
     'diffuse_frm_ground':[Ground_Diffuse]
     })    
     return results
+
 
 def check_shadow(key, model, solarvector):
     occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solarvector)
@@ -235,13 +270,36 @@ def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_
     t_mrt= ((Eshort*(1-pedestrian_albedo)+Elong)/sigma)**(1/4.)   
     return t_mrt
 
-def all_mrt(pedkey,compound,pdTa,solarparam,model_inputs):
+#def all_mrt(pedkey,compound,pdTa,solarparam,model_inputs):
+#    """ Accepts dataframe of solar parameters, model inputs"""
+#    Esky = calc_Esky_emis(pdTa.val_at_coord(pedkey).v, RH)
+#    svf, gvf, intercepts = fourpiradiation(pedkey, compound) #interceptped        
+#    shadowint = check_shadow(pedkey, compound,solarparam.solarvector[0])
+#        
+#    SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity = [[x]*len(intercepts) for x in [model_inputs.surftemp[0], solarparam.direct_sol[0], model_inputs.wall_albedo[0], model_inputs.wall_emissivity[0]]] #instead of call values
+#    Elwall, Eswall = calc_radiation_from_values(SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity)
+#    Eground = model_inputs.ground_emissivity[0]*sigma*gvf/2*model_inputs.groundtemp[0]**4
+#    
+#    TMRT =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam,svf,gvf, ped_constants.body_albedo[0], shadow=shadowint)
+#    
+#    results = pd.DataFrame({
+#    'TMRT':[TMRT],
+#    'SVF':[svf],
+#    'Elwall':[Elwall],
+#    'Eswall':[Eswall],
+#    'Eground':[Eground]
+#    })    
+#    return results
+
+def all_mrt(pedkey,compound,pdTa,pdReflect,pedTs,solarparam,model_inputs):
     """ Accepts dataframe of solar parameters, model inputs"""
     Esky = calc_Esky_emis(pdTa.val_at_coord(pedkey).v, RH)
     svf, gvf, intercepts = fourpiradiation(pedkey, compound) #interceptped        
     shadowint = check_shadow(pedkey, compound,solarparam.solarvector[0])
-        
-    SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity = [[x]*len(intercepts) for x in [model_inputs.surftemp[0], solarparam.direct_sol[0], model_inputs.wall_albedo[0], model_inputs.wall_emissivity[0]]] #instead of call values
+    
+    call_values(intercepts, surfpdcoord, model_inputs.gridsize)
+    SurfTemp, SurfReflect = [call_values(intercepts, surfpdcoord, gridsize) for x in [pedTs, pdReflect]]
+    SurfAlbedo, SurfEmissivity =  [[x]*len(intercepts) for x in [model_inputs.wall_albedo[0], model_inputs.wall_emissivity[0]]] #instead of call values
     Elwall, Eswall = calc_radiation_from_values(SurfTemp, SurfReflect, SurfAlbedo, SurfEmissivity)
     Eground = model_inputs.ground_emissivity[0]*sigma*gvf/2*model_inputs.groundtemp[0]**4
     
@@ -268,6 +326,11 @@ def calc_SET(microclimate,ped_constants,ped_properties):
     ped_constants: Properties of a typical standing person. Dataframe with columns       'eff_radiation_surface_area_ratio'
     microclimate: DataFrame with columns        'air_temperature','wind_speed','mean_radiant_temperature','mean_static_pressure'
     """
+    dubois_area = 0.202*ped_constants['mass']**0.425*ped_constants['height']**0.725
+    body_mu = ped_constants['work']/ped_constants['met']
+    heat_produced = ped_constants['met']*(1-body_mu)
+    ped_properties['T_skin'] = 35.7 - 0.032*heat_produced/dubois_area #Auliciems and Szokolay pg 19
+    
     Ta = microclimate['T_air']
     microclimate['water_vapor_pressure'] = wpa = np.exp(20.386-5132/Ta)*.133322368
     H = ped_constants['met'] - ped_constants['work']  
@@ -279,16 +342,17 @@ def calc_SET(microclimate,ped_constants,ped_properties):
         - 0.0173*ped_constants['met']*(5.87-wpa) \
         - 0.0014*ped_constants['met']*(34-Ta)) #cloth temperature [K]
     ped_properties['Lewis_ratio'] = lr = 15.15*ped_properties['T_skin']/273.2 
-    Recl=ped_constants['Rcl']/(lr*ped_constants['icl'])  
+    Recl=ped_constants['Rcl']*k/(lr*ped_constants['icl'])  
     
     # heat transfer coefficients and operative temperature, pressure
     hsc=8.6*(microclimate['wind_speed']**0.53)*(pt/101.33)**.55; #W/m**2*kPa corrected convective transfer coefficients for sensible heat, 0.15<v<1.5, for standing pedestrian
     he=lr*hsc;  #evaporate heat transfer coefficient
     hesp=he*(101.33/microclimate['mean_static_pressure'])**0.45; ##standard evaporate heat transfer coefficient, from Gagge,1986     
+    
     hr=4*ped_constants['body_emis']*sigma*ped_constants['eff_radiation_SA_ratio']*((tcl+microclimate['mean_radiant_temperature'])/2.)**3;   #radiative heat transfer coefficient
     hz=hr+hsc;
     Ia=1./(hz*ped_constants['fcl']);   #intrinsic insulation of the air layer
-    hp=1./(Ia+ped_constants['Rcl']);   #Sensible Heat Transfer Coefficient
+    hp=1./(Ia+ped_constants['Rcl']*k);   #Sensible Heat Transfer Coefficient
     Rea=1/(lr*ped_constants['fcl']*hsc);
     hep=1/(Rea+Recl);    #insensible heat transfer coefficient
     hsp=hp+hr; #overall sensible heat transfer caefficient            
