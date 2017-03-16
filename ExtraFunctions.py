@@ -146,7 +146,7 @@ def makemodelmatrix((M,N),street,width,height):
 #Uses heights of cubes to build up matrix
     for i in range(1,len(bbc)):
         display_list.append(makeblock(bbc[i],width,height))#make all the cubes
-    compound = pyliburo.py3dmodel.construct.make_compound(display_list)
+    compound = pyliburo.py3dmodel.construct.make_compound(display_list+[groundface])
     return {"model":compound,"ground":groundface}
     
 def makemodelstagger((M,N),street,width,height):
