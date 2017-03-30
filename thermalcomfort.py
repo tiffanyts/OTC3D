@@ -27,7 +27,7 @@ import time
 
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
-Ndir = 250
+Ndir = 1000
 unitball = fpi.tgDirs(Ndir)
 sigma =5.67*10**(-8)  
 
@@ -35,7 +35,10 @@ sigma =5.67*10**(-8)
 
 def read_pdcoord(cfd_inputfile,separator = ','):
     """ Input files into coordinate positions """
-    if cfd_inputfile == 'empty': 
+    if type(cfd_inputfile)== pd.core.frame.DataFrame:
+        cfd_input = cfd_inputfile 
+        cfd_input.columns =['x','y','z','v']
+    elif cfd_inputfile == 'empty': 
         cfd_input = pd.DataFrame(columns = ['x','y','z','v'])
     else:
         try:     # if it's a csv file, read csv
@@ -115,7 +118,7 @@ class pdcoord(object):
         
         return self
 
-    def val_at_coord(self,listcoord, radius = 0.):
+    def val_at_coord(self,listcoord, radius = 1):
         """ Enter coordinates as a list. If only X or only X,Y are given, returns selected dataframe. Range of selection can be widened with a radius.  """
         minx, miny, minz = map(lambda a: a-radius, listcoord) #make bins
         maxx, maxy, maxz = map(lambda a: a+radius, listcoord)
@@ -150,7 +153,7 @@ class pdcoord(object):
         
         return fig
         
-    def contour(self,title='',cbartitle = '',model=[], zmax = None, zmin = None, filename = None, resolution = 1, unit_str = ''):
+    def contour(self,title='',cbartitle = '',model=[], zmax = None, zmin = None, filename = None, resolution = 1, unit_str = '', bar = True):
         """ filename to save image. resolution to increase resolution (<1 to decrease)"""
 
         font = {'weight' : 'medium',
@@ -167,10 +170,8 @@ class pdcoord(object):
         plt.title(title)
         plt.contour(xi, yi, zi, 15, linewidths = 0, cmap=plt.cm.bone)
         plt.pcolormesh(xi, yi, zi, cmap = plt.get_cmap('rainbow'),vmax = zmax, vmin = zmin)
-        cbar = plt.colorbar()
-        cbar.ax.set_ylabel(cbartitle)
+        if bar: cbar = plt.colorbar(); cbar.ax.set_ylabel(cbartitle)
 
-        
         plt.absolute_import
         try:
             vertices = [(vertex.X(), vertex.Y()) for vertex in pyliburo.py3dmodel.fetch.vertex_list_2_point_list(pyliburo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
@@ -196,22 +197,29 @@ def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
     else: fill = values
     empty = pdcoord(zip(pedkeys_np.transpose()[0], pedkeys_np.transpose()[1], pedkeys_np.transpose()[2],fill))
     return empty
-    
+
+
 #%% Radiation Model Functions
 
 """
 1) Calculate solar parameters
 2) Calculate shadows, output pdcoord of shaded areas
 For each pedestrian location:
-3) Use fourpiradiation() to calculate sky view factor, list of visible intecept, and number of remaining directions that hit the ground (groundN)
-4) Use call_values to call values of Ts, reflect, wall_albedo, wall_emissivity at intecepted locations on building surfaces
-5) Use calc_radiation_from_values() to return longwave and shortwave radiation from surfaces
+3) Use fourpiradiation() to calculate sky view factor, list of visible intecept,
+    and number of remaining directions that hit the ground (groundN)
+4) Use call_values to call values of Ts, reflect, wall_albedo, wall_emissivity 
+    at intecepted locations on building surfaces
+5) Use calc_radiation_from_values() to return longwave & shortwave radiation from surfaces
 6) Use wall_emissivity*sigma*Ts**4*groundN/Ndir to calculate remaining ground longwave radiation
 7) Use E_dif*solarvf + E_sol*solarvf*shadowint for direct and diffuse solar radiation
 8) Tmrt = ((Eshort*(1-ped_albedo)+Elong)/sigma)**(1/4.)
 
  """
 def solar_param((y,mo,d,h,mi),latitude,longitude, UTC_diff=0, groundalbedo=0.18):
+    """ This function uses PVLib to calculate solar parameters. 
+    Returns a DataFrame of solar vector, solar view factor, 
+    direct solar radiation intensity, and diffuse solar radiation 
+    intensities from the sky and the ground """
     time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
     thistime = pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
     thisloc = pvlib.location.Location(latitude, longitude, tz='UTC', altitude=0, name=None)
@@ -249,30 +257,30 @@ def get_shadow(pedestrian_keys, model,solar_vector):
     shadow.data['v'] = shadow.data.apply(lambda row: check_shadow((row['x'], row['y'], row['z']),model, solar_vector), axis=1)
     return shadow
 
-def skyviewfactor(ped, model):
+def skyviewfactor(key, model):
     """ This function is replaced by fourpiradiation, which combines the calculation with groundview and wall visibility """
     visible=0.; blocked = 0.;
     for direction in unitball.getDirUpperHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
+        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,(X,Y,Z))
         if occ_interpt != None: blocked +=1.0
         else: visible +=1.0
     svf = (visible)/(visible+blocked);
     return svf
 
-def fourpiradiation(ped, model):
+def fourpiradiation(key, model):
     """ returns SVF, number of ground points (N), and list of intercepts. 
     For uniform ground temperature, do not include ground surface in model. Longwave irradiance from ground can be calculated as emissivity*sigma*groundtemp**4*N/Ndir 
     If ground temperature is not uniform, include the ground in the model, and radiation will be calculated with the other surfaces. """ 
     sky=0.; ground = 0.; intercepts=[]
     for direction in unitball.getDirUpperHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
+        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,(X,Y,Z))
         if occ_interpt != None: intercepts.append([occ_interpt.X(), occ_interpt.Y(), occ_interpt.Z()])
         else: sky +=1.0
     for direction in unitball.getDirLowerHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,ped,(X,Y,Z))
+        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,(X,Y,Z))
         if occ_interpt != None: 
             intercepts.append([occ_interpt.X(), occ_interpt.Y(), occ_interpt.Z()])
             #ground += int(int(occ_interpt.Z())==0) if ground is included in model 
@@ -295,35 +303,54 @@ def calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity):
 
 def calc_Esky_emis(Ta,RH):
     """ returns scalar of longwave radiation from the sky, that needs to be factored by SVF  """
-    sigma =5.67*10**(-8)    
-    vp = RH*6.1121*np.exp((18.678-(Ta-273.2)/234.4)*(Ta-273.2)/(Ta-273.2+257.14))/1000
+    sigma =5.67*10**(-8)
+    TaK =  Ta+273.15
+    vp = RH*6.1121*np.exp((18.678-(Ta)/234.4)*(Ta)/(Ta+257.14))/1000
     skyemis = 1.24*(vp/Ta)**(1/7.)
-    Esky = sigma*skyemis*(Ta**4)*(0.82-0.25*10**(-0.0945*vp))
+    Esky = sigma*skyemis*(TaK**4)*(0.82-0.25*10**(-0.0945*vp))
     return Esky
 
 def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_albedo, shadow=False):
+    """ calculates mean radiant temperature from different sources of radiation in the urban environment """
     sigma =5.67*10**(-8)
     Eshort =  solarparam.diffuse_frm_sky[0]*SVF/2 + solarparam.diffuse_frm_ground[0]*GVF/2 + solarparam.direct_sol[0]*solarparam.solarviewfactor[0]*shadow+ Ereflect 
     Elong = Esky*SVF/2+Esurf+Eground
     t_mrt= ((Eshort*(1-pedestrian_albedo)+Elong)/sigma)**(1/4.) - 273.15  
-    return t_mrt
 
-def all_mrt(pedkey,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_constants,gridsize=1,RH=50):
+    results = pd.DataFrame({
+    'TMRT':[t_mrt],
+    'Elong':[Elong],
+    'Eshort':[Eshort]
+    })      
+    
+    return results
+
+def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_constants,gridsize=1,RH=50):
     """ Accepts dataframe of solar parameters, model inputs"""
     sigma =5.67*10**(-8)
-    Esky = calc_Esky_emis(pdAirTemp.val_at_coord(pedkey).v, RH)
+    
+    try: Esky =np.mean(calc_Esky_emis(pdAirTemp.val_at_coord(key).v, RH))
+    except AttributeError: Esky = calc_Esky_emis(pdAirTemp, RH)
     time1 = time.clock()
-    svf, gvf, intercepts = fourpiradiation(pedkey, compound) #interceptped
+    svf, gvf, intercepts = fourpiradiation(key, compound) #interceptped
     time2 = time.clock()
     #print 'fourpi time ',(time2-time1)/60.0
                                           
     time1 = time.clock()
-    shadowint = check_shadow(pedkey, compound,solarparam.solarvector[0])
+    shadowint = check_shadow(key, compound,solarparam.solarvector[0])
     time2 = time.clock()
     #print 'shadow time ',(time2-time1)/60.0
     
     time1 = time.clock()
-    SurfTemp, SurfReflect = [call_values(intercepts, surfpdcoord, gridsize) for surfpdcoord in [pdSurfTemp, pdReflect]]
+    
+    try: SurfTemp =call_values(intercepts, pdSurfTemp, gridsize)
+    except AttributeError: SurfTemp = [pdSurfTemp]*len(intercepts)
+    
+    try: SurfReflect =call_values(intercepts, pdReflect, gridsize)
+    except AttributeError: SurfReflect = [pdReflect]*len(intercepts)
+
+    
+    #SurfTemp, SurfReflect = [call_values(intercepts, surfpdcoord, gridsize) for surfpdcoord in [pdSurfTemp, pdReflect]]
     if np.isnan(SurfTemp).any():
         print 'Warning: ' , sum(np.isnan(SurfTemp)), ' intercepts do not have values. Treated as Sky'
         SurfTemp = SurfTemp[~np.isnan(SurfTemp)]
@@ -334,16 +361,20 @@ def all_mrt(pedkey,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inpu
     Elwall, Eswall = calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity)
     Eground = model_inputs.ground_emissivity[0]*sigma*gvf/2*model_inputs.groundtemp[0]**4
     
-    TMRT =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam, svf,gvf, ped_constants.body_albedo[0], shadow=shadowint)
+    mrtresults =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam, svf,gvf, ped_constants.body_albedo[0], shadow=shadowint)
     time2 = time.clock()
     print 'call time ',(time2-time1)/60.0
                          
     results = pd.DataFrame({
-    'TMRT':[TMRT],
+    'TMRT':[mrtresults.TMRT[0]],
+    'Elong':[mrtresults.Elong[0]],
+    'Eshort':[mrtresults.Eshort[0]],
     'SVF':[svf],
-    'Elwall':[Elwall],
-    'Eswall':[Eswall],
-    'Eground':[Eground],
+#    'Elwall':[Elwall],
+#    'Eswall':[Eswall],
+#    'Eground':[Eground],
+    'Esky':[Esky*svf/2],
+    'shadow':[bool(shadowint)]
     })    
     return results
 
@@ -433,8 +464,6 @@ def calc_SET(microclimate,ped_constants,ped_properties):
     try:
         s_set = microclimate['SET']= fsolve(func,0)[0]
     except: s_set =microclimate['mean_radiant_temperature']= np.nan
-
-    
     return s_set
 
 #OT + w ∗ im ∗ LR ∗ (pa - 0.5∗psET)
