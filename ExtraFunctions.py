@@ -146,7 +146,7 @@ def makemodelmatrix((M,N),street,width,height):
 #Uses heights of cubes to build up matrix
     for i in range(1,len(bbc)):
         display_list.append(makeblock(bbc[i],width,height))#make all the cubes
-    compound = pyliburo.py3dmodel.construct.make_compound(display_list+[groundface])
+    compound = pyliburo.py3dmodel.construct.make_compound(display_list)
     return {"model":compound,"ground":groundface}
     
 def makemodelstagger((M,N),street,width,height):
@@ -211,3 +211,6 @@ def centerblock(dic, street,width):
     Tab = repeat_surf(dic,3,street,width)
     new_dic = {key:value for key, value in Tab.iteritems() if (street+width) < key[0] < (street+width)*2 and (street+width) < key[1] < (street+width)*2}
     return new_dic
+
+def quickline((X,Y,Z),Zend=0):
+    return pyliburo.py3dmodel.construct.make_edge((X,Y,Z),(X,Y,Zend))

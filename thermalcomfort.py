@@ -325,7 +325,7 @@ def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_
     
     return results
 
-def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_constants,gridsize=1,RH=50):
+def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_properties,gridsize=1,RH=50):
     """ Accepts dataframe of solar parameters, model inputs"""
     sigma =5.67*10**(-8)
     
@@ -361,7 +361,7 @@ def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,
     Elwall, Eswall = calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity)
     Eground = model_inputs.ground_emissivity[0]*sigma*gvf/2*model_inputs.groundtemp[0]**4
     
-    mrtresults =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam, svf,gvf, ped_constants.body_albedo[0], shadow=shadowint)
+    mrtresults =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam, svf,gvf, ped_properties.body_albedo[0], shadow=shadowint)
     time2 = time.clock()
     print 'call time ',(time2-time1)/60.0
                          
@@ -380,13 +380,13 @@ def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,
 
 #%% SET Calculations 
 
-def calc_SET(microclimate,ped_constants,ped_properties):
+def calc_SET(microclimate,ped_properties):
     """
     Parameters
     ---------
     ped_properties:  DataFrame with columns 
     ped_constants: Properties of a typical standing person. Dataframe with columns       'eff_radiation_surface_area_ratio'
-    microclimate: DataFrame with columns        'air_temperature','wind_speed','mean_radiant_temperature','mean_static_pressure'
+    microclimate: DataFrame with columns        'air_temperature','wind_speed','mean_radiant_temperature','RH'
     """
     k=0.155; #unit conversion factor for 1clo to m^2*K/W
     pt=101.325;   #local atmosphere presssure in kPa
@@ -395,10 +395,10 @@ def calc_SET(microclimate,ped_constants,ped_properties):
     wind_speed = abs(microclimate['wind_speed'][0])    
     dubois_area = 0.202*ped_properties['mass']**0.425*ped_properties['height']**0.725
     
-    H = ped_constants['met']*58.2 - ped_constants['work']   #1 met = 58.2
+    H = ped_properties['met']*58.2 - ped_properties['work']   #1 met = 58.2
  
-    body_mu = ped_constants['work']/ped_constants['met']/58.2 #1 met = 58.2
-    heat_produced = ped_constants['met']*(1-body_mu)*58.2 #1 met = 58.2
+    body_mu = ped_properties['work']/ped_properties['met']/58.2 #1 met = 58.2
+    heat_produced = ped_properties['met']*(1-body_mu)*58.2 #1 met = 58.2
     Tsk = ped_properties['T_skin'] = 35.7 - 0.032*heat_produced/dubois_area #Auliciems and Szokolay pg 19
     
     Ta = microclimate['T_air'][0]
@@ -411,22 +411,21 @@ def calc_SET(microclimate,ped_constants,ped_properties):
     pssk=  np.exp(20.386-5132/(ped_properties['T_skin']+273.15))*.133322368 #water vapor pressure at skin; units in kPa
     pdpt= np.exp(20.386-5132/(Tdp+273.15))*.133322368
 
-    Hsk =  ped_constants['met']*58.2 - ped_constants['work'] - 0.0173*ped_constants['met']*58.2*(5.87-vp)- 0.0014*ped_constants['met']*58.2*(34-Ta)
+    Hsk =  ped_properties['met']*58.2 - ped_properties['work'] - 0.0173*ped_properties['met']*58.2*(5.87-vp)- 0.0014*ped_properties['met']*58.2*(34-Ta)
     
     
-    Icl = k*ped_constants['iclo']
+    Icl = k*ped_properties['iclo']
     ped_properties['T_clothing']  = ped_properties['T_skin'] \
         - 0.0275*(H)\
         - Icl*((H)-3.05*(5.73-0.007*(H)-vp) \
         - 0.42*((H)-58.15) \
-        - 0.0173*ped_constants['met']*58.2*(5.87-vp) \
-        - 0.0014*ped_constants['met']*58.2*(34-Ta)) #other equation in Ye et al 2003, Doherty 1998
-    
-    
+        - 0.0173*ped_properties['met']*58.2*(5.87-vp) \
+        - 0.0014*ped_properties['met']*58.2*(34-Ta)) #other equation in Ye et al 2003, Doherty 1998
+       
     
     # heat transfer coefficients and operative temperature, pressure
-    if 5.66 *(ped_constants['met'][0] - 0.85)**0.39 >= 8.9*wind_speed**0.5:
-        hsc = 5.66 *(ped_constants['met'] - 0.85)**0.39
+    if 5.66 *(ped_properties['met'][0] - 0.85)**0.39 >= 8.9*wind_speed**0.5:
+        hsc = 5.66 *(ped_properties['met'] - 0.85)**0.39
     else:
         hsc = 8.6*wind_speed**0.53 # Gagge 1986, ASHRAE convective heat transfer coeff
     
@@ -436,16 +435,16 @@ def calc_SET(microclimate,ped_constants,ped_properties):
     he=lr*hsc;  #evaporate heat transfer coefficient
     hesp=he*(101.33/(vp+pt))**0.45; ##standard evaporate heat transfer coefficient, from Gagge,1986 and ASHRAE   
     
-    hr=4*ped_constants['body_emis']*sigma*ped_constants['eff_radiation_SA_ratio']*(273.15+(ped_properties['T_clothing']+microclimate['mean_radiant_temperature'])/2.)**3;   #radiative heat transfer coefficient, ASHRAE handbook
+    hr=4*ped_properties['body_emis']*sigma*ped_properties['eff_radiation_SA_ratio']*(273.15+(ped_properties['T_clothing']+microclimate['mean_radiant_temperature'])/2.)**3;   #radiative heat transfer coefficient, ASHRAE handbook
     hz=hr+hsc;
     
     # CLOTHING PARAMETERS
-    Ia=1./(hz*ped_constants['fcl']);   #intrinsic insulation of the air layer, Gagge 1986
+    Ia=1./(hz*ped_properties['fcl']);   #intrinsic insulation of the air layer, Gagge 1986
     hp=1./(Ia+Icl);   #Sensible Heat Transfer Coefficient, Gagge 1986
     hsp=hp+hr; #overall sensible heat transfer caefficient
 
-    Rea=1/(lr*ped_constants['fcl']*hsc); # Gagge 1986
-    Recl=Icl/(lr*ped_constants['icl'])  
+    Rea=1/(lr*ped_properties['fcl']*hsc); # Gagge 1986
+    Recl=Icl/(lr*ped_properties['icl'])  
     hep=1/(Rea+Recl);    #insensible heat transfer coefficient,Gagge 1986
     
         
@@ -463,7 +462,7 @@ def calc_SET(microclimate,ped_constants,ped_properties):
     func = lambda st : (ttso - st + (0.088*(hesp+hsc)/hsp)*(ppso-microclimate['RH']/100*.133322368*np.exp(20.386-5132/(st+273.15))))
     try:
         s_set = microclimate['SET']= fsolve(func,0)[0]
-    except: s_set =microclimate['mean_radiant_temperature']= np.nan
+    except NameError: s_set = np.nan
     return s_set
 
 #OT + w ∗ im ∗ LR ∗ (pa - 0.5∗psET)
