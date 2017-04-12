@@ -2,6 +2,7 @@
 Created on Jul 21, 2016
 
 @author: Tiangang Yin
+Reference: Yin, T., Gastellu-Etchegorry, J.P., Lauret, N., Grau, E. and Rubio, J., 2013. A new approach of direction discretization and oversampling for 3D anisotropic radiative transfer modeling. Remote Sensing of Environment, 135, pp.213-223.
 '''
 
 import argparse
