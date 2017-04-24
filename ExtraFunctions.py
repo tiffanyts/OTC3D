@@ -10,33 +10,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 import pyliburo
-
 import numpy as np
 import pandas as pd
-
-def npscatter(np,title=''):
-    X,Y,Z,V = np.transpose()
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d'); ax.pbaspect = [1, 1, 1] #always need pbaspect
-    ax.set_title(title)
-    p = ax.scatter(X, Y,Z,c = V ,edgecolors='none', s=5) #*abs((Y-B)*mww)
-    ax.view_init(elev=90, azim=-89)
-    ax.set_xlabel('X axis'); ax.set_ylabel('Y axis'); ax.set_zlabel('Z axis')
-    fig.colorbar(p)
-    plt.draw()
-    return fig
-
-def scatter3d_fromdic(dic,title=''):
-    X,Y,Z = zip(*dic.keys())
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d'); ax.pbaspect = [1, 1, 1] #always need pbaspect
-    ax.set_title(title)
-    p = ax.scatter(X, Y,Z,c = dic.values(),edgecolors='none', s=5) #*abs((Y-B)*mww)
-    ax.view_init(elev=90, azim=-89)
-    ax.set_xlabel('X axis'); ax.set_ylabel('Y axis'); ax.set_zlabel('Z axis')
-    fig.colorbar(p)
-    plt.draw()
-    return fig
 
 def scatter3d_frompdcoord(pdcoord,title=''):
     fig = plt.figure()
@@ -61,19 +36,6 @@ def scatter_pd_on_model(pdcoord,model,size=4):
     fig.colorbar(p)
     plt.draw()
 
-def scatter_on_model(dic,model):
-    vertices = [(vertex.X(), vertex.Y(),vertex.Z()) for vertex in pyliburo.py3dmodel.fetch.vertex_list_2_point_list(pyliburo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
-    print max(vertices), min(vertices)
-    X,Y,Z = zip(*dic.keys()); V1,V2,V3 = zip(*vertices);
-    fig = plt.figure(); 
-    ax = fig.add_subplot(111, projection='3d'); ax.pbaspect = [1, 1, 1] #always need pbaspect
-    p = ax.plot_wireframe(V1,V2,V3)
-    p = ax.scatter(X, Y,Z, c=dic.values(), s = 3, edgecolors='none') #*abs((Y-B)*mww)
-    ax.set_xlabel('X axis'); ax.set_ylabel('Y axis'); ax.set_zlabel('Z axis')
-#    fig.colorbar(p)
-    plt.draw()
-
-
 def makeblock(botleft,w,hh): 
     """returns a block ready to be displayed """    
     points = []
@@ -85,21 +47,6 @@ def makeblock(botleft,w,hh):
     face = pyliburo.py3dmodel.construct.make_polygon(tuplist)
     cube = pyliburo.py3dmodel.construct.extrude(face, (0,0,1), hh)
     return cube
-    
-def dcfdcoord(cfd_inputfile):
-    """ Input FLUENT csv files into coordinate positions """
-    cfd_input= pd.read_csv(cfd_inputfile,delim_whitespace = True,skiprows=[0],header=None)
-    cfd_input.columns = ['x','y','z','value']
-    
-    d = dict([((x,y,z),i) for x,y,z,i in zip(cfd_input.x, cfd_input.y,cfd_input.z,cfd_input.value)])
-    return d
-    
-def read_pdcoord(cfd_inputfile,separator = ','):
-    """ Input FLUENT csv files into coordinate positions """
-    cfd_input= pd.read_csv(cfd_inputfile,sep=separator,skiprows=[0],header=None,names = ['x','y','z','v']) # r"\s+" is whitespace
-    cfd_input.sortlevel(axis=0,inplace=True,sort_remaining=True)
-
-    return cfd_input
 
 def makemodel_frmcsv(csv_matrix,delimiter_str,meshsize):
     """ Returns a display_list of OCC extruded squares based on a height-zero matrix from csv file  - no ground"""
@@ -148,7 +95,25 @@ def makemodelmatrix((M,N),street,width,height):
         display_list.append(makeblock(bbc[i],width,height))#make all the cubes
     compound = pyliburo.py3dmodel.construct.make_compound(display_list)
     return {"model":compound,"ground":groundface}
-    
+
+def makemodel_frmshp(shpfile_list, def_height=5):
+    building_list = []
+    for shpfile in shpfile_list:
+        buildings = pyliburo.shp2citygml.get_buildings(shpfile)
+        if buildings:
+            building_list.extend(buildings)
+    display_list = []
+    for block in buildings:
+        bface = block['geometry'][0]
+        try:
+            extrude = pyliburo.py3dmodel.construct.extrude(bface, (0,0,1),float(block['height']))
+        except (KeyError,RuntimeError):
+            extrude = pyliburo.py3dmodel.construct.extrude(bface, (0,0,1),def_height)
+        display_list.append(extrude)
+    compound = pyliburo.py3dmodel.construct.make_compound(display_list)
+    return compound
+
+
 def makemodelstagger((M,N),street,width,height):
     """ Returns a MxN matrix as a compound. """
     bbc = []; display_list = [];
@@ -175,42 +140,6 @@ def make_sq_center(origin,x):
     a,b,c = origin
     square = pyliburo.py3dmodel.construct.make_polygon( [(a+x,b+x,c), (a+x,b-x,c), (a-x,b-x,c),(a-x,b+x,c)])
     return square
-
-def repeat_surf(tdict, N, street, width):
-    """ Given a dictionary, street and building width, returns the dictionary repeated for a NxN repeated matrix""" 
-    dict2 = {}
-    shift = [n*(street+width) for n in range(0,N)]
-    for (X,Y,Z) in tdict.iterkeys():
-        [dict2.update({(X+col,Y+row,Z):tdict[(X,Y,Z)]}) for col in shift for row in shift]
-    return dict2
-
-def quart_res(dic):
-    X,Y,Z = map(lambda x: sorted(list(set(x))), zip(*dic)); coarse_dic = {}; 
-    for i in range(1,len(X),2):
-        new_y = []; values_x1= []; values_x2=[]; 
-        for j in range(1,len(Y),2):
-            new_y.append(np.mean([Y[j], Y[j-1]]))
-            values_x1.append(np.mean([dic[(X[i-1], Y[j],Z[0])], dic[(X[i-1], Y[j-1],Z[0])]]))
-            values_x2.append(np.mean([dic[(X[i], Y[j],Z[0])], dic[(X[i], Y[j-1],Z[0])]]))
-        new_x = np.mean([X[i], X[i-1]])
-        coarse_dic.update({(new_x,new_y[i],Z[0]):np.mean([values_x1[i],values_x2[i]]) for i in range(len(values_x1))})
-    return coarse_dic
-
-def shift_dxdy(dic, dx, dy):
-    """ Given a dictionary, street and building width, returns the dictionary moved up and over""" 
-    dict2 = {(X+dx,Y+dy,Z):dic[(X,Y,Z)] for (X,Y,Z) in dic.iterkeys()}
-    return dict2
-        
-    
-def shrink_to_block(dic, lower,upper):
-    """ Given symmetric dictionary, shrinks dictionary to square defined by (lower,lower) and (upper, upper)""" 
-    stuff =  {(X+1-lower,Y+1-lower,Z):dic[(X,Y,Z)] for (X,Y,Z) in dic if (lower<= Y<=upper and lower<= X<=upper)}
-    return stuff
-    
-def centerblock(dic, street,width):
-    Tab = repeat_surf(dic,3,street,width)
-    new_dic = {key:value for key, value in Tab.iteritems() if (street+width) < key[0] < (street+width)*2 and (street+width) < key[1] < (street+width)*2}
-    return new_dic
 
 def quickline((X,Y,Z),Zend=0):
     return pyliburo.py3dmodel.construct.make_edge((X,Y,Z),(X,Y,Zend))

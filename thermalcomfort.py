@@ -21,17 +21,16 @@ import numpy as np
 import pandas as pd
 import pyliburo
 import pvlib
-import fourpispace as fpi
 import datetime
 import time
 
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
 Ndir = 1000
-unitball = fpi.tgDirs(Ndir)
+unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
 sigma =5.67*10**(-8)  
 
-#%% Data is handled as pandas dataframes with x, y, z, and value columns
+#%% Data is handled as pandas dataframes with x, y, z, and value columns. 
 
 def read_pdcoord(cfd_inputfile,separator = ','):
     """ Input files into coordinate positions """
@@ -51,7 +50,6 @@ def read_pdcoord(cfd_inputfile,separator = ','):
                 return None
     cfd_input.sortlevel(axis=0,inplace=True,sort_remaining=True)
     return cfd_input
-
 
 class pdcoord(object):
     """ Class for all x,y,z,v input files used in thermal comfort analysis. To initialize an empty pdcoord, put 0 instead of data """
@@ -257,17 +255,6 @@ def get_shadow(pedestrian_keys, model,solar_vector):
     shadow.data['v'] = shadow.data.apply(lambda row: check_shadow((row['x'], row['y'], row['z']),model, solar_vector), axis=1)
     return shadow
 
-def skyviewfactor(key, model):
-    """ This function is replaced by fourpiradiation, which combines the calculation with groundview and wall visibility """
-    visible=0.; blocked = 0.;
-    for direction in unitball.getDirUpperHemisphere():
-        (X,Y,Z) = (direction.x,direction.y,direction.z)
-        occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,(X,Y,Z))
-        if occ_interpt != None: blocked +=1.0
-        else: visible +=1.0
-    svf = (visible)/(visible+blocked);
-    return svf
-
 def fourpiradiation(key, model):
     """ returns SVF, number of ground points (N), and list of intercepts. 
     For uniform ground temperature, do not include ground surface in model. Longwave irradiance from ground can be calculated as emissivity*sigma*groundtemp**4*N/Ndir 
@@ -349,8 +336,6 @@ def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,
     try: SurfReflect =call_values(intercepts, pdReflect, gridsize)
     except AttributeError: SurfReflect = [pdReflect]*len(intercepts)
 
-    
-    #SurfTemp, SurfReflect = [call_values(intercepts, surfpdcoord, gridsize) for surfpdcoord in [pdSurfTemp, pdReflect]]
     if np.isnan(SurfTemp).any():
         print 'Warning: ' , sum(np.isnan(SurfTemp)), ' intercepts do not have values. Treated as Sky'
         SurfTemp = SurfTemp[~np.isnan(SurfTemp)]
@@ -411,7 +396,7 @@ def calc_SET(microclimate,ped_properties):
     pssk=  np.exp(20.386-5132/(ped_properties['T_skin']+273.15))*.133322368 #water vapor pressure at skin; units in kPa
     pdpt= np.exp(20.386-5132/(Tdp+273.15))*.133322368
 
-    Hsk =  ped_properties['met']*58.2 - ped_properties['work'] - 0.0173*ped_properties['met']*58.2*(5.87-vp)- 0.0014*ped_properties['met']*58.2*(34-Ta)
+    #Hsk =  ped_properties['met']*58.2 - ped_properties['work'] - 0.0173*ped_properties['met']*58.2*(5.87-vp)- 0.0014*ped_properties['met']*58.2*(34-Ta)
     
     
     Icl = k*ped_properties['iclo']
@@ -446,7 +431,6 @@ def calc_SET(microclimate,ped_properties):
     Rea=1/(lr*ped_properties['fcl']*hsc); # Gagge 1986
     Recl=Icl/(lr*ped_properties['icl'])  
     hep=1/(Rea+Recl);    #insensible heat transfer coefficient,Gagge 1986
-    
         
     #Operative temperature and pressure
     v0 =0.08 #reference wind speed
@@ -465,4 +449,3 @@ def calc_SET(microclimate,ped_properties):
     except NameError: s_set = np.nan
     return s_set
 
-#OT + w ∗ im ∗ LR ∗ (pa - 0.5∗psET)
