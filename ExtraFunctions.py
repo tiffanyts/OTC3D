@@ -48,7 +48,7 @@ def makeblock(botleft,w,hh):
     cube = pyliburo.py3dmodel.construct.extrude(face, (0,0,1), hh)
     return cube
 
-def makemodel_frmcsv(csv_matrix,delimiter_str,meshsize):
+def makemodel_frmcsv(csv_matrix,meshsize,delimiter_str=','):
     """ Returns a display_list of OCC extruded squares based on a height-zero matrix from csv file  - no ground"""
     modmat = pd.read_csv(csv_matrix,delimiter=delimiter_str)
     dimx = modmat.shape
@@ -74,7 +74,7 @@ def makemodel_frmcsv(csv_matrix,delimiter_str,meshsize):
     points1 = [(0,0,0), (0,dimx[1]*meshsize,0), (dimx[0]*meshsize,dimx[1]*meshsize,0),(dimx[0]*meshsize,0,0)]#clockwise
     groundface = pyliburo.py3dmodel.construct.make_polygon(points1)
     compound = pyliburo.py3dmodel.construct.make_compound(display_list)
-    return ({"model":compound,"ground":groundface}, np.median(width), np.median(street), hei)
+    return ({"model":compound,"ground":groundface,"width":np.median(width), "height":np.median(hei),"streetwidth":np.median(street)})
     
 def makemodelmatrix((M,N),street,width,height):
     """ Returns a MxN matrix as a compound. """
