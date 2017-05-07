@@ -312,24 +312,16 @@ def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_
     
     return results
 
-def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_properties,gridsize=1,RH=50):
+def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_properties,gridsize=1):
     """ Accepts dataframe of solar parameters, model inputs"""
     sigma =5.67*10**(-8)
-    
+    RH = model_inputs.RH[0]
     try: Esky =np.mean(calc_Esky_emis(pdAirTemp.val_at_coord(key).v, RH))
     except AttributeError: Esky = calc_Esky_emis(pdAirTemp, RH)
-    time1 = time.clock()
     svf, gvf, intercepts = fourpiradiation(key, compound) #interceptped
-    time2 = time.clock()
-    #print 'fourpi time ',(time2-time1)/60.0
-                                          
-    time1 = time.clock()
+
     shadowint = check_shadow(key, compound,solarparam.solarvector[0])
-    time2 = time.clock()
-    #print 'shadow time ',(time2-time1)/60.0
-    
-    time1 = time.clock()
-    
+
     try: SurfTemp =call_values(intercepts, pdSurfTemp, gridsize)
     except AttributeError: SurfTemp = [pdSurfTemp]*len(intercepts)
     
@@ -347,8 +339,6 @@ def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,
     Eground = model_inputs.ground_emissivity[0]*sigma*gvf/2*model_inputs.groundtemp[0]**4
     
     mrtresults =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam, svf,gvf, ped_properties.body_albedo[0], shadow=shadowint)
-    time2 = time.clock()
-    print 'call time ',(time2-time1)/60.0
                          
     results = pd.DataFrame({
     'TMRT':[mrtresults.TMRT[0]],
