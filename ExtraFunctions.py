@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Aug 17 11:27:10 2016
-THESE ARE FUNCTIONS TIFFANY USES TO:
-Read Negin's output, visualize results, and build pythonOCC models (based on negin's model)
-@author: SHARED1-Tiffany
+@author: Tiffany Sin 2017. 
+
+The functions in this module support thermal comfort analysis for idealized configurations of cubic buildings by building 3D CAD models within Pyliburo. 
+
 """
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -13,31 +14,9 @@ import pyliburo
 import numpy as np
 import pandas as pd
 
-def scatter3d_frompdcoord(pdcoord,title=''):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d'); ax.pbaspect = [1, 1, 1] #always need pbaspect
-    ax.set_title(title)
-    p = ax.scatter(list(pdcoord.x), list(pdcoord.y),list(pdcoord.z),c = list(pdcoord.v),edgecolors='none', s=5) #*abs((Y-B)*mww)
-    ax.view_init(elev=90, azim=-89)
-    ax.set_xlabel('X axis'); ax.set_ylabel('Y axis'); ax.set_zlabel('Z axis')
-    fig.colorbar(p)
-    plt.draw()
-    return fig
-    
-def scatter_pd_on_model(pdcoord,model,size=4):
-    vertices = [(vertex.X(), vertex.Y(),vertex.Z()) for vertex in pyliburo.py3dmodel.fetch.vertex_list_2_point_list(pyliburo.py3dmodel.fetch.topos_frm_compound(model)["vertex"])]
-    print max(vertices), min(vertices); 
-    V1,V2,V3 = zip(*vertices);
-    fig = plt.figure(); 
-    ax = fig.add_subplot(111, projection='3d'); ax.pbaspect = [1, 1, 1] #always need pbaspect
-    p = ax.plot_wireframe(V1,V2,V3)
-    p = ax.scatter(list(pdcoord.x), list(pdcoord.y),list(pdcoord.z),c = list(pdcoord.v), s = size, edgecolors='none') 
-    ax.set_xlabel('X axis'); ax.set_ylabel('Y axis'); ax.set_zlabel('Z axis')
-    fig.colorbar(p)
-    plt.draw()
 
 def makeblock(botleft,w,hh): 
-    """returns a block ready to be displayed """    
+    """returns a square building with dimensions w x w and height hh """    
     points = []
     points.append(botleft)
     points.append([botleft[0],botleft[1]+w,botleft[2]])
@@ -97,6 +76,7 @@ def makemodelmatrix((M,N),street,width,height):
     return {"model":compound,"ground":groundface}
 
 def makemodel_frmshp(shpfile_list, def_height=5):
+    "extrudes a 3D model of a building area according to a shapefile, to a height determined by the shapefile or by def_height if no height attribute is available."
     building_list = []
     for shpfile in shpfile_list:
         buildings = pyliburo.shp2citygml.get_buildings(shpfile)
@@ -115,7 +95,7 @@ def makemodel_frmshp(shpfile_list, def_height=5):
 
 
 def makemodelstagger((M,N),street,width,height):
-    """ Returns a MxN matrix as a compound. """
+    """ Returns a MxN staggered matrix as a compound. """
     bbc = []; display_list = [];
 #Build Ground
     offset = (width+street)/2
@@ -137,9 +117,11 @@ def makemodelstagger((M,N),street,width,height):
     return {"model":compound,"ground":groundface}
     
 def make_sq_center(origin,x):
+    "Returns a square polygon (TopoDS_Face) centered at origin with dimensions of x by x. Useful for determining the pedestrian locations around a certain building."
     a,b,c = origin
     square = pyliburo.py3dmodel.construct.make_polygon( [(a+x,b+x,c), (a+x,b-x,c), (a-x,b-x,c),(a-x,b+x,c)])
     return square
 
 def quickline((X,Y,Z),Zend=0):
+    "Returns a vertical edge (ToposDS_Edge) at (X,Y,Z). Useful for drawing markers for the origin and pedestrian location."
     return pyliburo.py3dmodel.construct.make_edge((X,Y,Z),(X,Y,Zend))

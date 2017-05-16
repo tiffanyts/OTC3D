@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon May 08 00:34:26 2017
-Example of building model of idealized cubes from CSV file
+@author: Tiffany Sin 2017
+
+Example construction of a neighborhood of square buildings on Pyliburo ('The model'). The location of the model should be compatible with the imported data (the easiest way to do so is to recenter data coordinates to the origin, and build the model about the origin). 
+
 NOTE: Building footprint must be square; height and streetwidth can be variable
 
-@author: SHARED1-Tiffany
 """
 import os
 import pyliburo

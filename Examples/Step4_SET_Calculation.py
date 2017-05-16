@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jan 17 09:43:35 2017
-AMS_Prelim_Output
-@author: SHARED1-Tiffany
+@author: Tiffany Sin 2017
+
+After calculating TMRT and importing initial information, SET can be calculated at every pedestrian location
 """
 import time
 import numpy
@@ -20,14 +21,14 @@ simdate = 'Today'
 
 for config in cases:
     Tmrt = config['TMRT']
-    pedkeys  = config['pedkeys']
+    pedkeys  = config['pedkeys'] #imported previously. 
     Ta = config['Tair'] #constant
 
     V = config['wind'] 
     RH = 50
-    config['SET']  = thermalcomfort.pdcoords_from_pedkeys(pedkeys)
+    config['SET']  = thermalcomfort.pdcoords_from_pedkeys(pedkeys) #initialize a pdcoord for SET that is filled with zeros
 
-    for index,row in config['SET'].data.iterrows():
+    for index,row in config['SET'].data.iterrows(): #calculate SET line by line along the pdcoord (i.e. for each coordinate on the grid)
         time1 = time.clock()
         pedkey = (row.x,row.y,row.z)
         microclimate = pd.DataFrame({

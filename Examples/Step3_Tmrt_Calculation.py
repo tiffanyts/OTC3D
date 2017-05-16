@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jan 16 16:23:35 2017
-TMRT for Staggered and Aligned Matrices
-@author: SHARED1-Tiffany
+@author: Tiffany Sin 2017
 
-Aligned- A0,A1,A2  - 0.0625		0.25		0.444 
-Staggered- S0,S1,S2- 0.0625		0.25		0.444
+TMRT for idealized Matrices
+
 
 """
 #import pyliburo
@@ -28,7 +27,7 @@ RH = model_inputs.RH[0]
 #calculate once
 
 time1 = time.clock()
-solarparam = thermalcomfort.solar_param(casetime,latitude,longitude,UTC_diff=timezone,groundalbedo=model_inputs.ground_albedo[0])
+solarparam = thermalcomfort.solar_param(casetime,latitude,longitude,UTC_diff=timezone,groundalbedo=model_inputs.ground_albedo[0]) #this calculates solar parameters
 time2 = time.clock()
 print 'solar time ',(time2-time1)/60.0
 
@@ -36,18 +35,16 @@ cases = [A0]
 for config in cases:
     pedkeys  = config['pedkeys']
     compound = config['model']
-    pdTa = thermalcomfort.pdcoords_from_pedkeys(pedkeys, np.array([config["Tair"]]*len(pedkeys))) #Tair is constant
+    pdTa = thermalcomfort.pdcoords_from_pedkeys(pedkeys, np.array([config["Tair"]]*len(pedkeys))) #Tair is constant. pdcoord is (X,Y,Z,Tair)
     pdTs = config["Tsurf"]
-    avgTs = pdTs.data.v.mean()
     pdReflect = config["Refl"]
-    avgRs = pdReflect.data.v.mean()
     
-    config['TMRT'] =thermalcomfort.pdcoords_from_pedkeys(pedkeys)
+    config['TMRT'] =thermalcomfort.pdcoords_from_pedkeys(pedkeys) #initialize a pdcoord for Tmrt that is filled with zeros
 
     for index, row in config['TMRT'].data.iterrows():
         time1 = time.clock()
         pedkey = (row.x,row.y,row.z)
-        results = thermalcomfort.all_mrt(pedkey,compound,pdTa,pdReflect,pdTs,solarparam,model_inputs,ped_constants,gridsize=3)
+        results = thermalcomfort.all_mrt(pedkey,compound,pdTa,pdReflect,pdTs,solarparam,model_inputs,ped_constants,gridsize=3) #this calculates all steps necessary for MRT calculation
         row.v = results.TMRT[0]
         time2 = time.clock()
         tottime = (time2-time1)/60.0

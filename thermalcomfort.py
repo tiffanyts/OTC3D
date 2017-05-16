@@ -2,16 +2,19 @@
 """
 Created on Tue Jun 28 09:28:56 2016
 
-@author: SHARED1-Tiffany
-Functions for building simple geometry model
+@author: Tiffany Sin 2017
+
+Functions for calculating Mean Radiant Temperature and Standard Effective Temperature. 
+Please see examples for the implementation of OTC3D. 
+
+This code is in three parts. After importing the necessary modules, the first section determines the pdcoord helper class, which is used to pass spatial data around.
+The second section provides the mean radiant temperature calculation. It is comprised of several smaller functions that are combined in sequence in the function all_mrt()
+The final section consists of the SET calculation, which relies on inputs as defined in the example.  
+
 """
 #
-import os
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import matplotlib as mpl
 import matplotlib.mlab as ml
 from matplotlib.path import Path
 import matplotlib.patches as patches
@@ -26,46 +29,52 @@ import time
 
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
-Ndir = 1000
-unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
-sigma =5.67*10**(-8)  
 
-#%% Data is handled as pandas dataframes with x, y, z, and value columns. 
 
-def read_pdcoord(cfd_inputfile,separator = ','):
-    """ Input files into coordinate positions """
-    if type(cfd_inputfile)== pd.core.frame.DataFrame:
-        cfd_input = cfd_inputfile 
-        cfd_input.columns =['x','y','z','v']
-    elif cfd_inputfile == 'empty': 
-        cfd_input = pd.DataFrame(columns = ['x','y','z','v'])
+#%% Handling input and output data
+# To deal with spatial variability, we introduce the helper class 'pdcoord', which is a Pandas DataFrame of four columns (x, y, z, and value) columns.
+# This allows us to import and pass around detailed spatial data, like surface temperatures, air temperature, and wind speeds, and also to calculate SET and Tmrt in detail.  
+# We also include several functions to help visualize and manipulate our data.
+# A crash course on Pandas DataFrames can be found here: https://www.datacamp.com/community/tutorials/pandas-tutorial-dataframe-python#gs._wHPqvc
+
+def read_pdcoord(csv_inputfile,separator = ','):
+    """ Function to import data into dataframe structure. 
+    To create an empty dataframe, input the string 'Empty' instead. """
+    if type(csv_inputfile)== pd.core.frame.DataFrame: #If inputdata is already a dataframe, rename columns to ('x','y','z','v')
+        csv_input = csv_inputfile 
+        csv_input.columns =['x','y','z','v']
+    elif csv_inputfile == 'Empty':  #Create an empty dataframe. 
+        csv_input = pd.DataFrame(columns = ['x','y','z','v'])
     else:
-        try:     # if it's a csv file, read csv
-            cfd_input= pd.read_csv(cfd_inputfile,sep=separator,skiprows=[0],header=None,names = ['x','y','z','v']) # r"\s+" is whitespace
+        try:     # if it's a csv file, read csv directly into a dataframe
+            csv_input= pd.read_csv(csv_inputfile,sep=separator,skiprows=[0],header=None,names = ['x','y','z','v']) # r"\s+" is whitespace
         except IOError:   # If it's a numpy array, convert to pdframe
             try:
-                cfd_input = pd.DataFrame(np.array(cfd_inputfile), columns = ['x','y','z','v'])
+                csv_input = pd.DataFrame(np.array(csv_inputfile), columns = ['x','y','z','v'])
             except IOError:
                 print "Incorrect Input: read_pdcoord requires the input of a 4-column csv file, numpy array, or pandas dataframe." 
                 return None
-    cfd_input.sortlevel(axis=0,inplace=True,sort_remaining=True)
-    return cfd_input
+    csv_input.sortlevel(axis=0,inplace=True,sort_remaining=True)
+    return csv_input
 
 class pdcoord(object):
-    """ Class for all x,y,z,v input files used in thermal comfort analysis. To initialize an empty pdcoord, put 0 instead of data """
+    """ Helper class for all x,y,z,v input files used in thermal comfort analysis
+    To initialize a new pdcoord with input data, use pdcoord(csv_input)
+    To create a new pdcoord based on only coordinates, use pdcoords_from_pedkeys() (see below)
+    """
     
     def __init__(self, csv_input, sep =','):
-#        self.name = name
         self.data = read_pdcoord(csv_input,separator = sep)
     
     def recenter(self,origin=(0,0)):
+        """ Shifts coordinate data such that the bottom left corner is at the origin """
         print 'shifted by x:' ,min(self.data.x)+ origin[0], ' and y:',min(self.data.y) + origin[1]
         self.data['x'] = self.data['x'] - min(self.data.x) + origin[0]
         self.data['y'] = self.data['y'] - min(self.data.y) + origin[1]
         return self
     
     def repeat_outset(self,unit=1):
-        """ extends in 8 directions for repeating data"""
+        """ extends in 8 directions for repeating data. Used to repeat surface data to account for more buildings in the area of study"""
         shiftLR = max(self.data.x) - min(self.data.x) + unit
         shiftUD = max(self.data.y) - min(self.data.y) + unit
         
@@ -113,22 +122,24 @@ class pdcoord(object):
 
         for Q in [Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8]:
             self.data =self.data.append(Q,ignore_index=True)
-        
         return self
 
     def val_at_coord(self,listcoord, radius = 1):
-        """ Enter coordinates as a list. If only X or only X,Y are given, returns selected dataframe. Range of selection can be widened with a radius.  """
-        minx, miny, minz = map(lambda a: a-radius, listcoord) #make bins
-        maxx, maxy, maxz = map(lambda a: a+radius, listcoord)
+        """ Returns the values of a pdcoord at a target coordinate, within a distance of the radius. 
+        Input coordinates as a list ([X,Y,Z], [X], or [X,Y]). If only X or only X,Y are given, returns selected dataframe. 
+        Range of selection can be widened or narrowed with the radius.
+        For a single value result, take the mean of the resulting pdcoord. e.g. surfpdcoord.val_at_coord(listcoord,radius = 5).v.mean()"""
+        minx, miny, minz = map(lambda a: a-radius, listcoord) #make bins about the target listcoord.
+        maxx, maxy, maxz = map(lambda a: a+radius, listcoord) 
     
-        if len(listcoord) == 1: return self.data[(self.data.x <=maxx) & (self.data.x >= minx)]
+        if len(listcoord) == 1: return self.data[(self.data.x <=maxx) & (self.data.x >= minx)] #select values that lie within the location bins.
         elif len(listcoord) == 2: return self.data[(self.data.x <=maxx) & (self.data.x >= minx) & (self.data.y <=maxy) & (self.data.y >= miny) ]
         elif len(listcoord) == 3: 
             try: return self.data[(self.data.x <=maxx) & (self.data.x >= minx) & (self.data.y <=maxy) & (self.data.y >= miny) &(self.data.z <=maxz) & (self.data.z >= minz)]
-            except ValueError: print "No entry matches that coordinate" 
+            except ValueError: print "No data found at that coordinate" 
 
     def scatter3d(self,title='',size=40,model=[]):
-        
+        """Returns a scatterplot of the pdcoord. Useful for visualizing 3D surface data """
         font = {'weight' : 'medium',
                 'size'   : 22}
         #plt.rc('font', **font)
@@ -152,7 +163,7 @@ class pdcoord(object):
         return fig
         
     def contour(self,title='',cbartitle = '',model=[], zmax = None, zmin = None, filename = None, resolution = 1, unit_str = '', bar = True):
-        """ filename to save image. resolution to increase resolution (<1 to decrease)"""
+        """ Returns a figure with contourplot of 2D spatial data. Insert filename to save the figure as an image. Increase resolution to increase detail of interpolated data (<1 to decrease)"""
 
         font = {'weight' : 'medium',
                 'size'   : 22}
@@ -189,7 +200,7 @@ class pdcoord(object):
 #        plt.plot(heights, SVFs_can, label='Canyon')
     
 def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
-    """ fills a pdcoord from numpy arrays """
+    """ Creates a pdcoord using coordinates from a numpy array (np.array([(X1,Y1,Z1),(X2,Y2,Z2),...])) and values from a 1D numpy array of the same size. Can be thought of as a 'zip' function to attach a 1D series of data to coordinates  """
     if not values.size:
         fill = [np.nan]*len(pedkeys_np)
     else: fill = values
@@ -213,6 +224,10 @@ For each pedestrian location:
 8) Tmrt = ((Eshort*(1-ped_albedo)+Elong)/sigma)**(1/4.)
 
  """
+Ndir = 1000
+unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
+sigma =5.67*10**(-8)  
+
 def solar_param((y,mo,d,h,mi),latitude,longitude, UTC_diff=0, groundalbedo=0.18):
     """ This function uses PVLib to calculate solar parameters. 
     Returns a DataFrame of solar vector, solar view factor, 
