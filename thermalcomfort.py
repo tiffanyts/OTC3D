@@ -22,7 +22,7 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 #import pyliburo
-import pvlib
+#import pvlib
 import datetime
 import time
 
@@ -41,6 +41,7 @@ def install_and_import(package):
 
 
 install_and_import('pyliburo')
+install_and_import('pvlib')
 
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
