@@ -1,0 +1,18 @@
+6 folders, ASCII 
+order: # time Nx Ny Nz Value 
+
+fort.100-109: Surface heat flux 
+fort.200-209: Surface temperature 
+fort.300-309: Surface reflected radiation 
+
+10 file for 10 surfaces (including windows)
+0: roof, 1:  ground, 6-9: windows
+
+hours: 
+13 max Kdir+Kdif
+15 max Ta
+
+Ta: Tsfc_Facets.out file column 16 
+column 6: Day of Sim
+column 7: time 
+(10 days * 24 hours =240 data points)

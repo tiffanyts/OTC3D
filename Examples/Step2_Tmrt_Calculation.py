@@ -1,0 +1,55 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan 16 16:23:35 2017
+@author: Tiffany Sin 2017
+
+TMRT for idealized Matrices. This example is dependent on Step1_Model_SetUp. 
+
+"""
+#import pyliburo
+#import ExtraFunctions
+import numpy
+import datetime
+import time
+#%%
+
+#%% Ped Locations 
+simdate = 'Today'
+
+latitude = model_inputs.latitude[0]
+longitude = model_inputs.longitude[0]
+casetime = model_inputs.time[0]
+
+# When calculating spatial variation of thermal comfort (i.e. not temporal variation), solar parameters only need to be calculated once
+time1 = time.clock()
+solarparam = thermalcomfort.solar_param(casetime,latitude,longitude,UTC_diff=timezone,groundalbedo=model_inputs.ground_albedo[0]) 
+time2 = time.clock()
+print 'solar_parameters() CALCULATION TIME: ',(time2-time1)/60.0, 'minutes'
+
+
+cases = [myexperiment]
+for config in cases:
+    #Initializing... 
+    pedkeys  = config['pedkeys'] #pedkeys are the coordinates at which Tmrt will be calculated.
+    compound = config['model']
+    pdTs = config["Tsurf"]
+    pdReflect = config["Refl"]
+    #The air temperature provided is a bulk value. Repeat the value across all coordinates to create a pdcoord for Tair. 
+    pdTa = thermalcomfort.pdcoords_from_pedkeys(pedkeys, np.array([config["Tair"]]*len(pedkeys))) 
+    
+    #initialize a pdcoord for Tmrt that is filled with zeros
+    config['TMRT'] =thermalcomfort.pdcoords_from_pedkeys(pedkeys) 
+
+    for index, row in config['TMRT'].data.iterrows(): #For each pedestrian coordinate...
+        time1 = time.clock()
+        pedkey = (row.x,row.y,row.z) #retrieve the pedestrian's coordinate
+        results = thermalcomfort.all_mrt(pedkey,compound,pdTa,pdReflect,pdTs,solarparam,model_inputs,ped_constants,gridsize=3) #this calculates all steps necessary for MRT calculation.
+        #see code in part 2 of thermalcomfort.py to see step-by-step explanation of the calculation.        
+        row.v = results.TMRT[0]
+        time2 = time.clock()
+        tottime = (time2-time1)/60.0
+        print  index, results.TMRT[0], tottime
+    
+    #Save results to a csv file    
+    config['TMRT'].data.to_csv(config['name'] +  '_'+simdate +'_TMRT.csv')
+

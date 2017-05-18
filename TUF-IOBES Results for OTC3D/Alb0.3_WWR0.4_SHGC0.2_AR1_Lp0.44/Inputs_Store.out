@@ -1,0 +1,65 @@
+ vfcalc,yd,deltat,outpt_tm,Tthreshold
+           1          91   999.000000000000        1.00000000000000     
+  1.000000000000000E-002
+ facet_out,matlab_out,sum_out
+ F F F
+ Bowen_ratio
+  0.860000000000000     
+ dalb
+  5.000000000000000E-003
+ albr,albs,albw,emisr,emiss,emisw
+  0.600000000000000       0.100000000000000       0.300000000000000     
+  0.900000000000000       0.950000000000000       0.900000000000000     
+ z0,lambdaf,zrooffrc
+  -999.000000000000       -999.000000000000       -999.000000000000     
+ z0roofm,z0roadm,z0roofh,z0roadh,moh,rw
+  1.000000000000000E-002  1.000000000000000E-002  1.000000000000000E-002
+  1.000000000000000E-002   200.000000000000        1.00000000000000     
+ buildht_m,zref,minres
+   16.6300000000000        33.2600000000000                4
+ Tsfcr,Tsfcs,Tsfcw,Tsfcg,Tintw,Tints
+   285.150000000000        285.150000000000        288.150000000000     
+   288.150000000000        297.150000000000        300.620000000000     
+ stror_in,strorint,strormax
+  0.000000000000000E+000   45.0000000000000       0.000000000000000E+000
+ xlat_in,xlatint,xlatmax
+   1.37000000000000        1.37000000000000        1.37000000000000     
+ numlp
+           1
+ lpin(k)
+  0.440000000000000     
+ bh_o_bl(k)
+   1.00000000000000     
+ initial forcing data:
+ temperature (K), vapour pressure (mb) =    299.150000000000     
+   31.4665498387222     
+ wind speed (m/s), wind direction (degrees) =    1.31762017359836     
+   310.000000000000     
+ pressure (mb) =    1007.00000000000     
+ Ldown calc Brown, Ldown (W/m2) =    433.199935312633     
+ patchlen,buildht_m,bh,zref
+   2.07875000000000        16.6300000000000                8
+   33.2600000000000     
+ nbuildx,nbuildy
+           5           5
+ bh,bl,sw,lpactual,bhblactual,hwactual,aw,al,a1,a2
+           8           8           4  0.444444444444444     
+   1.00000000000000        2.00000000000000               56          56
+          23          34
+ Tan_vf_road_wall,vf_road_to_wall, vf_wall_to_road,buildht_m ,sw,patchlen
+   4.00000000000000       0.422020869622631       0.105505217405658     
+   16.6300000000000                4   2.07875000000000     
+ zH,zd,z0,lambdapR,lambdac,lambdaf
+   16.6300000000000        11.8620773730835        1.12218957871975     
+  0.444444444444444        2.77777777777778       0.444444444444444     
+ Lroof,HW_avg2,al2,aw2
+   8.00000000000000        1.60000000000000               56          56
+ ________________________________________
+ -----lambdap,H/L,latitude,streetdir  0.440000000000000     
+   1.00000000000000        1.37000000000000       0.000000000000000E+000 -----
+ ABSOLUTE VALUE OF RELATIVE SVF ERROR ->  0.488466135779736      
+ % (for the central urban unit)
+ -----lambdap,H/L,latitude,streetdir  0.440000000000000     
+   1.00000000000000        1.37000000000000       0.000000000000000E+000 -----
+ ABSOLUTE VALUE OF RELATIVE SVF ERROR ->  0.488466135779736      
+ % (for the central urban unit)

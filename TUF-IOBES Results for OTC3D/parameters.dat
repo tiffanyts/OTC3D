@@ -1,0 +1,278 @@
+1
+91 999. 1.0
+240 10
+0.01
+F F F
+T T T 
+T T T T
+0.86
+0.005
+0.6 0.10 0.10 
+0.9 0.95 0.9 0.84
+0.22,0.177,0.664,0.664,0.0
+10,10.0,0.221,0.223,0.222,0.220,0.216,0.209,0.194,0.162,0.1,0.0
+10,10.0,0.681,0.686,0.69,0.69,0.684,0.675,0.659,0.608,0.439,0.001
+10,10.0,0.122,0.124,0.123,0.121,0.118,0.113,0.102,0.079,0.042,0.0
+10,10.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+10,10.0,0.033,0.033,0.032,0.031,0.03,0.028,0.024,0.017,0.007,0.0
+T
+-999. -999. -999.
+0.01 0.01 0.01 0.01 200. 1.0
+3 1 3 6
+4
+16.63 33.26
+4
+1.0 0.0
+4.0 4.0
+12 12 15 15
+24.0 27.47
+0.0 45.0 0.0
+1.37 1.37 1.37
+1
+0.0625
+1
+1
+F T 23 26
+0 24
+4.8
+
+
+
+
+
+** note: H/W of an individual canyon can be calculated by:
+   H/W = sqrt(lpin)*bh_o_bl/(1-sqrt(lpin))  (ALTHOUGH, the model will
+   increase the resolution if it is too low for any given facet, and
+   this may result in the lambdap, bh_o_bl, or H/W ratios that you want
+   not being met exactly
+
+
+Parameters in the order that they are read in:
+
+c model/integration parameters (further integration parameters are found
+in the atmospheric forcing file
+      read(299,*)vfcalc
+      read(299,*)yd,deltat,outpt_tm
+      read(299,*)TMYData,MaxDay
+      read(299,*)Tthreshold
+      read(299,*)facet_out,matlab_out,sum_out
+      read(299,*)grass
+      read(299,*)N_Window,S_Window,E_Window,W_Window
+      read(299,*)Bowen_ratio
+
+c radiative parameters
+      read(299,*)dalb
+      read(299,*)albr,albs,albw
+      read(299,*)emisr,emiss,emisw,emisg
+      read(299,*)SHGC_diff,trans_diff,absbg_diff1,absbg_diff2,absbg_diff3
+      read(299,*)NumAngle,delta_angle,(SHGC_ang(i_ang),i_ang=1,NumAngle)
+      read(299,*)NumAngle,delta_angle,(absbg_ang1(i_ang),i_ang=1,NumAngle)
+      read(299,*)NumAngle,delta_angle,(absbg_ang2(i_ang),i_ang=1,NumAngle)
+      read(299,*)NumAngle,delta_angle,(absbg_ang3(i_ang),i_ang=1,NumAngle)
+      read(299,*)NumAngle,delta_angle,(trans_ang(i_ang),i_ang=1,NumAngle)
+
+
+c convection parameters
+      read(299,*)ASHRAE_ExterConvMethods
+      read(299,*)z0,lambdaf,zrooffrc
+      read(299,*)z0roofm,z0roadm,z0roofh,z0roadh,moh,rw
+
+c Roughness Index(ASHRAE): 1 = very rough  2 = rough  3 = medium rough
+c                  4 = medium smooth  5 = smooth  6 = very smooth
+      read(299,*)W_RoughIndex,S_RoughIndex,R_RoughIndex,window_RoughIndex
+c From ASHRAE:
+c               1 = ocean or other body of water with at least 5km of expanse
+c               2 = flat terrain with some isolated obstacles
+c               3 = rural areas with low buildings and trees etc.
+c               4 = urban or industrial or forest area
+c               5 = center of a large city (definitions from TARP Manual)
+
+      read(299,*)Terrain
+
+
+c domain geometry
+      read(299,*)buildht_m,zref
+      read(299,*)minres
+
+c window geometry
+      read(299,*)spnt_windW,spnt_windH
+      read(299,*)windW,windH
+
+c initial temperatures
+      read(299,*)Tsfcr,Tsfcs,Tsfcw,Tsfcg
+      read(299,*)Tintw,Tints
+
+c loop parameters
+      read(299,*)stror_in,strorint,strormax
+      read(299,*)xlat_in,xlatint,xlatmax
+      read(299,*)numlp
+      do k=1,numlp
+       read(299,*)lpin(k)
+      enddo
+      read(299,*)numbhbl
+      do l=1,numbhbl
+       read(299,*)bh_o_bl(l)
+      enddo
+
+c HVAC system
+       read(299,*)FloatingTempSpecifiedCapacitySys,DualSetpointSys,MinSetpoint,MaxSetpoint
+       read(299,*)Sys_OnTime,Sys_OffTime
+       read(299,*)COP
+
+
+
+Explanation of the parameters:
+
+* note: 'roads' and 'streets' are used interchangeably
+
+c model/integration parameters
+VFCALC: if vfcalc=0 (means no vf calcs) the file "vfinfo.dat" with
+the correct view factor info must be in the run directory;
+vfcalc=1 means exact plane parallel view factor calcs;
+vfcalc=2 means contour integration view factor calcs; ** note: vfcalc
+must be 1 or 2 if looping through lambdap is turned on (i.e. numlp>1)
+YD: julian day (affects diurnal evolution of solar angle). In case of 
+using TMY File it must be equal to the julian date of the first day 
+in TMY file (=1 for Jan 1st).
+DELTAT: (seconds) input timestep - will be reduced by the model if needed
+ - a large number (e.g. 999.) will ensure that the model controls the
+timestep (recommended) - the model is optimized to find the largest
+timestep (therefore the fastest run time) that is still stable at any
+given time during the simulation
+OUTPT_TM: (hours) how often model outputs are written
+TMYData: Number of data in TMY file. (TMYData/24 = number of days in TMY file)
+MaxDay: Number of days to be simulated (Maximum number for day iteration)
+TTHRESHOLD: (deg C) accuracy of Newton's method in solving the patch
+energy balances - the smaller the number the higher the accuracy
+FACET_OUT: 'T' = write out individual patch surface temperatures organized
+by facet; 'F' = do not write out these files
+MATLAB_OUT: 'T' = write out files containing patch vertices and patch faces,
+as well as patch surface temperature (Tsfc), patch brightness temperature
+(Tbright), and patch net shortwave (Kstar); these three quantities can then
+be easily visualized in Matlab with the 'patch' command; 'F' - do not write
+these files
+SUM_OUT: 'T' = write out individual patch surface temperatures (Tsfc) and
+patch brightness temperature (Tbright) organized by TUF3D loop order (facet
+direction varies slowest, then z, then y, then x) - so as to be easily read
+in and assigned to the equivalent geometry (in the SUM model for example);
+'F' = do not write out these files
+GRASS: 'T' = Vegetated ground surface with Bowen ratio specified later
+N_Window: 'T' = there is a window on north wall, 'F' = there is no window
+S_Window,W_Window,E_Window: the same as N_Window
+Bowen_ratio: Bowen ratio which is the ratio of sensible heat flux to 
+latent heat flux. 
+
+c radiative parameters
+DALB: (W/m2) accuracy to which the effective albedo/emissivity of the
+canyon/cavity portion of the domain will be calculated; that is,
+reflections will continue until the change in albedo between timesteps
+is less than "dalb"
+ALBR,ALBS,ALBW: albedo of roof, street and wall patches, respectively
+EMISR,EMISS,EMISW,EMISG: emissivity of roof, street, wall, and glass 
+patches, respectively
+
+c Window difffuse properties (Maxium 3 window layers are allowed)
+c if #layers less than 3, input zero for the rest
+c Note: window part is based on ASHRAE Toolkit.
+SHGC_diff:   Diffuse SHGC,
+trans_diff:  Diffuse transmittance,
+absbg_diff1: Diffuse absorptance of layer #1 (1st window pane),
+absbg_diff2: Diffuse absorptance of layer #2 (2nd window pane),
+absbg_diff3: Diffuse absorptance of layer #3 (3rd window pane),
+
+c Window direct properties (Maxium 3 window layers are allowed)
+c if #layers less than 3, input zero for the rest
+NumAngle: Number of incident angles measured from normal (degree)
+delta_angle: Difference between each two incident angles; Incident angles are 
+from 0 to 90 degrees (e.g. for 10 incident angle: 
+'0,10,20,30,40,50,60,70,80,90' in degree)
+SHGC_ang: SHGC corresponding to incident angles 1 to NumAngle
+absbg_ang1: absorptance for layer #1 corresponding to incident angles 1 to NumAngle
+absbg_ang2: absorptance for layer #2 corresponding to incident angles 1 to NumAngle
+absbg_ang3: absorptance for layer #3 corresponding to incident angles 1 to NumAngle
+trans_ang: transmittance corresponding to incident angles 1 to NumAngle
+
+c convection parameters
+ASHRAE_ExterConvMethods: 'T'=using one of the ASHRAE suggested methods for 
+calculating exterior convection coefficient:'CalcHcOutByBLASTmodel' OR 
+'CalcHcOutByTARPmodel' OR 'CalcHcOutByMoWiTTmodel' OR 'CalcHcOutByDOE2model'
+'F'=using the method suggested in TUF3D.
+Z0: input town (i.e. overall) roughness length - model calculates it
+according to Macdonald (1998) if values is less than 0
+LAMBDAF: input town (i.e. overall) frontal area to plan area ratio
+ - model calculates it if values is less than 0, and the model formula
+depends on wind direction
+ZROOFFRC: (m) the height above roof level for variables (temp, wind) used
+to in forcing convection from roofs - model calculates it if the value
+is negative 
+Z0ROOFM,Z0ROADM: (m) roof and road momentum roughness lengths, respectively
+Z0ROOFH,Z0ROADH: (m) roof and road thermal roughness lengths, respectively
+ - if values are negative model defaults to 1/200 of corresponding
+momentum roughness lengths - **note that ratio of momentum to thermal
+roughness lengths should never be smaller than 1/200! **
+MOH: ratio of momentum to thermal roughness lengths for transfer from
+individual *surfaces* only
+RW: wall roughness relative to concrete (rw=1)
+
+W_RoughIndex,S_RoughIndex,R_RoughIndex,window_RoughIndex: Roughness index for
+wall, street, roof and window patches respectively.
+Terrain: used in convection coeff. calculation.
+
+c domain geometry
+BUILDHT_M: (m) height of buildings (mean height, if there is variation)
+ZREF: (m) height of measured forcing data (wind speed, air temperature)
+ - must be greater than 'buildht_m'
+MINRES: minimum resolution of any given facet (i.e. roof, road, or wall)
+ - recommended value is 4 or greater (6 is ideal); resolution of all
+other facets will be adjusted to maintain all geometric ratios while
+ensuring that all facets have a minimum of 'minres' patches across them
+in both dimensions (NOTE: THIS IS THE KEY PARAMETER THAT CONTROLS THE
+ACCURACY OF THE RADIATION SCHEME VS. THE COMPUTATIONAL EXPENSE -
+minres = 2 will give a quick estimate, minres = 4 tends to be a reasonable
+balance between speed and accuracy, and minres = 6 tends to give very
+accurate results but can be very computationally expensive and can require 
+a lot of memory, relative to the speed and memory of a typical desktop;
+it is also useful to remember that the minimum resolution for solar
+radiation absorption is effectively 2*minres - see the BLM paper for an
+explanation)
+
+c window geometry
+SPNT_windH,SPNT_windW:(patch) starting point of window height from street
+and starting point of window width from wall's left edge, respectively
+windW,windH:(patch)window width and height, respectively 
+
+c initial temperatures
+TSFCR,TSFCS,TSFCW,TSFCG: (deg C) initial surface temperatures (roofs, roads,
+walls,and glass, respectively)
+TINTW: (deg C) constant building internal air temperature (base of roofs
+and walls)
+TINTS: (deg C) constant deep-ground temperature (base of roads)
+
+c loop parameters (for multiple simulations with the same forcing data,
+but with different street orientations, latitudes, lambdap ratios, and
+combinations thereof)
+STROR_IN,STRORINT,STRORMAX: (degrees from alignment with cardinal
+directions) initial, loop interval, and final street orientation
+orientation
+XLAT_IN,XLATINT,XLATMAX: (degrees) initial, loop interval, and final
+latitude
+NUMLP: number of lambdap ratios to loop through
+LPIN(k): the lambdap ratios (from k=1 to k=numlp)
+NUMBHBL: number of bh (building height) to bl (building width) ratios to
+simulate for each lambdap
+BH_O_BL(k): the bh/bl ratios (from l=1 to l=numbhbl)
+
+c HVAC system
+FloatingTempSpecifiedCapacitySys:if it is TRUE then we have a
+HVAC system with floating temperature (from ASHRAE method)
+DualSetpointSys:if it is TRUE then we have a 
+HVAC system with dual setpoint thermostat with deadband between MinSetpoint 
+and MaxSetpoint
+MinSetpoint(C):If inside air temperature less than this value HVAC sys works in its heating mode
+MaxSetpoint(C):If inside air temperature more than this value HVAC sys works in its cooling mode
+Sys_OnTime,Sys_OffTime: The cooling or heating system operating 
+between time 'Sys_OnTime' and 'Sys_OffTime'.
+
+COP:Coefficient Of Performance for the air-conditioning system.
+
+
