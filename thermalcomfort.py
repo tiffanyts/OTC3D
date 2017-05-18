@@ -22,7 +22,11 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 #import pyliburo
+<<<<<<< HEAD
 import pvlib
+=======
+#import pvlib
+>>>>>>> origin/master
 import datetime
 import time
 
@@ -34,10 +38,17 @@ def install_and_import(package):
     except ImportError:
         import pip
         pip.main(['install', package])
+<<<<<<< HEAD
         print "Package not available. Importing package.."
     finally:
         globals()[package] = importlib.import_module(package)
         print "Package imported"
+=======
+        print "Package not installed- Installing package.. "
+    finally:
+        globals()[package] = importlib.import_module(package)
+        print "Package installed"
+>>>>>>> origin/master
 
 
 install_and_import('pyliburo')
@@ -474,4 +485,6 @@ def calc_SET(microclimate,ped_properties):
         s_set = microclimate['SET']= fsolve(func,0)[0]
     except NameError: s_set = np.nan
     return s_set
+
+
 
