@@ -22,11 +22,12 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 #import pyliburo
-<<<<<<< HEAD
+
+
 import pvlib
-=======
+
 #import pvlib
->>>>>>> origin/master
+
 import datetime
 import time
 
@@ -38,18 +39,12 @@ def install_and_import(package):
     except ImportError:
         import pip
         pip.main(['install', package])
-<<<<<<< HEAD
+
         print "Package not available. Importing package.."
-    finally:
-        globals()[package] = importlib.import_module(package)
-        print "Package imported"
-=======
-        print "Package not installed- Installing package.. "
+
     finally:
         globals()[package] = importlib.import_module(package)
         print "Package installed"
->>>>>>> origin/master
-
 
 install_and_import('pyliburo')
 install_and_import('pvlib')
@@ -234,7 +229,6 @@ def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
     empty = pdcoord(zip(pedkeys_np.transpose()[0], pedkeys_np.transpose()[1], pedkeys_np.transpose()[2],fill))
     return empty
 
-
 #%% Part 2) Radiation Model Functions
 
 #1) Calculate solar parameters
@@ -254,15 +248,18 @@ Ndir = 1000
 unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
 sigma =5.67*10**(-8)  
 
-def solar_param(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18):
+#%%
+
+def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18):
     """ This function uses PVLib to calculate solar parameters. 
     Returns a DataFrame of solar vector, solar view factor, 
     direct solar radiation intensity, and diffuse solar radiation 
     intensities from the sky and the ground """
-    #time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
-    #thistime = pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
-    thistime = pd.DatetimeIndex([pd.to_datetime(time_str,format= '%b %d %Y %H:%M')])
-    thisloc = pvlib.location.Location(latitude, longitude, tz='UTC', altitude=0, name=None)
+
+    time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
+    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min') # pd.to_datetime(pd.Timestamp(casetime)) # pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
+    #thistime = pd.DatetimeIndex([pd.to_datetime(time_str,format= '%B %d %Y %H:%M')])
+    thisloc = pvlib.location.Location(51.4826,  0.0077, tz='UTC', altitude=0, name=None)
     solpos = thisloc.get_solarposition(thistime)    
     
     sunpz = np.sin(np.radians(solpos.elevation[0])); hyp = np.cos(np.radians(solpos.elevation[0]))
@@ -284,7 +281,7 @@ def solar_param(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18):
     'diffuse_frm_ground':[Ground_Diffuse]
     })    
     return results
-
+#%%
 
 def check_shadow(key, model, solarvector):
     occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solarvector)
@@ -357,11 +354,12 @@ def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_
 def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_properties,gridsize=1):
     """ Accepts dataframe of solar parameters, model inputs. This function calls all the previous functions in order to calculate each component needed in the Stefan-Boltzmann equation for mean radiant temperature."""
     sigma =5.67*10**(-8)
+
     RH = model_inputs.RH[0]
-    
     
     try: Esky =np.mean(calc_Esky_emis(pdAirTemp.val_at_coord(key).v, RH)) #Calculation of sky irradiance if air temperature is a pdcoord
     except AttributeError: Esky = calc_Esky_emis(pdAirTemp, RH) #calculation of Esky if air temperature is a bulk value
+  
     
     svf, gvf, intercepts = fourpiradiation(key, compound) #Calculate Sky view factor, ground view factor, and locations ('intercepts') on the wall at which WVF and wall temperatures need to be retrieved. 
 
