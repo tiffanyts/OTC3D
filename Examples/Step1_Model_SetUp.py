@@ -21,40 +21,56 @@ parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
 folderpath = os.path.join(parent_path,"Outputs_"+simdate) #location to save results
 #%% SET Input
 
-ped_properties = pd.DataFrame({
-    'height':[1.5],
-   'skin_wetness':[0.088],
-    'mass': [70], #height
-    'height':[1.5], #meters
-    'eff_radiation_SA_ratio':[0.73], #AR - ratio of effective radiation area of body and body surf. area(Fanger 1967)
-    'body_emis':[0.95], #average emissivity of clothing/body surface, (ASHRAE 1997 8.7)
-    'body_albedo':[0.3],
-    'met':[1.2], #metabolic rate
-    'work':[0], #[W]
-    'iclo':[0.34], # icl, clothing vapor permeation efficiency (ASHRAE 8.8)
-    'icl':[0.36],  #insulation of air layer. 0.36*k for shorts and t-shirt (ASHRAE 8.8) 
-    'fcl':[1.1],    #clothing area factor. 1.1 for working shorts, short-sleeved shirt,
-   })
+#ped_properties = pd.DataFrame({
+ #   'height':[1.5],
+ #  'skin_wetness':[0.088],
+ #   'mass': [70], #height
+ #   'height':[1.5], #meters
+ #   'eff_radiation_SA_ratio':[0.73], #AR - ratio of effective radiation area of body and body surf. area(Fanger 1967)
+ #   'body_emis':[0.95], #average emissivity of clothing/body surface, (ASHRAE 1997 8.7)
+ #   'body_albedo':[0.3],
+ #   'met':[1.2], #metabolic rate
+ #   'work':[0], #[W]
+ #   'iclo':[0.34], # icl, clothing vapor permeation efficiency (ASHRAE 8.8)
+ #   'icl':[0.36],  #insulation of air layer. 0.36*k for shorts and t-shirt (ASHRAE 8.8) 
+ #   'fcl':[1.1],    #clothing area factor. 1.1 for working shorts, short-sleeved shirt,
+ #  })
 
 
-#pedproperties_pathfile = raw_input('Enter the full path of the pedestrain properties input file ')
-#ped_properties=pd.read_csv(pedproperties_pathfile)
-
-#modelinputs_pathfile = raw_input('Enter the full path of the model input file ')
-#model_inputs=pd.read_csv(modelinputs_pathfile)  
- 
-model_inputs = pd.DataFrame({
-    'latitude':[1.383419],
-    'longitude':[103.902707],
-    'time':[(2016,7,6,12,00)],
-    'wall_albedo':[0.3],
-    'wall_emissivity': [0.90],
-    'ground_emissivity':[0.95],
-    'ground_albedo':[0.30],
-    'groundtemp': [302],
+ped_properties=pd.read_csv('C:\Users\SHARED1-Tiffany\Desktop\OTC3D\ped_properties.csv')
+print ped_properties.height[0]
+print ped_properties.skin_wetness[0]
+print ped_properties.mass[0]
+print ped_properties.eff_radiation_SA_ratio[0]
+print ped_properties.body_emis[0]
+print ped_properties.body_albedo[0]
+print ped_properties.met[0]
+print ped_properties.work[0]
+print ped_properties.iclo[0]
+print ped_properties.icl[0]
+print ped_properties.fcl[0]
+    
+model_inputs=pd.read_csv('C:\Users\SHARED1-Tiffany\Desktop\OTC3D\Examples\model_inputs.csv')    
+#model_inputs = pd.DataFrame({
+#    'latitude':[1.383419],
+#    'longitude':[103.902707],
+#    'time':[(2016,7,6,12,00)],
+#    'wall_albedo':[0.3],
+#    'wall_emissivity': [0.90],
+#    'ground_emissivity':[0.95],
+#    'ground_albedo':[0.30],
+#    'groundtemp': [302],
    # 'surftemp':[301.2], #approx from jimeno's calulation
 
-    })
+ #   })
+print model_inputs.latitude[0];
+print model_inputs.longitude[0];
+print model_inputs.time[0];
+print model_inputs.wall_albedo[0];
+print model_inputs.wall_emissivity[0];
+print model_inputs.ground_emissivity[0];
+print model_inputs.ground_albedo[0];
+print model_inputs.groundtemp[0];
 
 
 myexperiment = {"name":"Example","canyon":96,"cube":32,"AR":0.33, "albedo":0.3, "gridsize":0.125}
@@ -63,7 +79,7 @@ myexperiment = {"name":"Example","canyon":96,"cube":32,"AR":0.33, "albedo":0.3, 
 cases = [myexperiment]
 for config in cases:
     #1 build the 3D model - see other example for different methods. This experiment is for a matrix of cubic building.
-    config["model"] = ExtraFunctions.makemodelmatrix((6,4),config['canyon']*config["gridsize"],config['cube']*config['gridsize'],config['cube']*config['gridsize'])["model"]
+    config["model"] = ExtraFunctions.makemodelmatrix((5,3),config['canyon']*config["gridsize"],config['cube']*config['gridsize'],config['cube']*config['gridsize'])["model"]
 
     #2 define the area of study. In this case, the pedestrian grid is within a square around a central building. 
     config["square"] = ExtraFunctions.make_sq_center(pyliburo.py3dmodel.calculate.get_centre_bbox(config["model"]),(config["canyon"]*config['gridsize']+config["cube"]*config['gridsize']-1)/2)
@@ -105,13 +121,10 @@ for config in cases:
 ##    
 for config in cases:
     #Detailed spatial air temperature is unavailable for this example, so a bulk temperature is taken from an energy balance model (TUFIOBES) for the time of day of this experiment. 
-   # hour = pd.DatetimeIndex([pd.to_datetime(model_inputs.time)]).hour[0]
-   #otherthermal = pd.read_csv(casefolder+'\\Tsfc_Facets.out',usecols=[5,6,15],header=None,sep='\s+',names=['day','hour','temperature'])
-   #otherthermal['hour']= otherthermal['hour'].apply(np.round)
-   #config['Tair'] = np.mean(otherthermal[otherthermal['hour']==model_inputs['time'][0][3]]['temperature'])    
+    hour = pd.DatetimeIndex([pd.to_datetime(model_inputs.time[0],format= '%b %d %Y %H:%M')]).hour[0]
     otherthermal = pd.read_csv(os.path.join(parent_path,'Examples','Input_Data','Example_thermal_data.out'),usecols=[5,6,15],header=None,sep='\s+',names=['day','hour','temperature'])
     otherthermal['hour']= otherthermal['hour'].apply(np.round)
-    config['Tair'] = np.mean(otherthermal[otherthermal['hour']==model_inputs['time'][0][3]]['temperature'])
+    config['Tair'] = np.mean(otherthermal[otherthermal['hour']==hour]['temperature'])
 
 #%% Importing Wind. The sample data here was taken from a CFD model of the same geometry. The data was provided as a matrix, as opposed to coordinates, according to the mesh grid.  
 
