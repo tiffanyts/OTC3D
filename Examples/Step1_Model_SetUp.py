@@ -14,6 +14,11 @@ import thermalcomfort
 import pyliburo
 import pandas as pd
 
+import imp #importing is causing heaps of problems so we use imp to help us keep our directories straight. 
+thermalcomfort = imp.load_source('thermalcomfort',parent_path+'\\thermalcomfort.py')
+ExtraFunctions = imp.load_source('ExtraFunctions',parent_path+'\\ExtraFunctions.py')
+reload(thermalcomfort) #still causing us problems so we reload thermalcomfort just in case
+reload(ExtraFunctions)
 #%%
 simdate = 'Today'
 current_path = os.path.dirname("__file__")
@@ -21,57 +26,9 @@ parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
 folderpath = os.path.join(parent_path,"Outputs_"+simdate) #location to save results
 #%% SET Input
 
-#ped_properties = pd.DataFrame({
- #   'height':[1.5],
- #  'skin_wetness':[0.088],
- #   'mass': [70], #height
- #   'height':[1.5], #meters
- #   'eff_radiation_SA_ratio':[0.73], #AR - ratio of effective radiation area of body and body surf. area(Fanger 1967)
- #   'body_emis':[0.95], #average emissivity of clothing/body surface, (ASHRAE 1997 8.7)
- #   'body_albedo':[0.3],
- #   'met':[1.2], #metabolic rate
- #   'work':[0], #[W]
- #   'iclo':[0.34], # icl, clothing vapor permeation efficiency (ASHRAE 8.8)
- #   'icl':[0.36],  #insulation of air layer. 0.36*k for shorts and t-shirt (ASHRAE 8.8) 
- #   'fcl':[1.1],    #clothing area factor. 1.1 for working shorts, short-sleeved shirt,
- #  })
-
-
-ped_properties=pd.read_csv('C:\Users\SHARED1-Tiffany\Desktop\OTC3D\ped_properties.csv')
-print ped_properties.height[0]
-print ped_properties.skin_wetness[0]
-print ped_properties.mass[0]
-print ped_properties.eff_radiation_SA_ratio[0]
-print ped_properties.body_emis[0]
-print ped_properties.body_albedo[0]
-print ped_properties.met[0]
-print ped_properties.work[0]
-print ped_properties.iclo[0]
-print ped_properties.icl[0]
-print ped_properties.fcl[0]
+ped_properties=pd.read_csv(parent_path+'\Examples\Input_Data\ped_properties.csv')
     
-model_inputs=pd.read_csv('C:\Users\SHARED1-Tiffany\Desktop\OTC3D\Examples\model_inputs.csv')    
-#model_inputs = pd.DataFrame({
-#    'latitude':[1.383419],
-#    'longitude':[103.902707],
-#    'time':[(2016,7,6,12,00)],
-#    'wall_albedo':[0.3],
-#    'wall_emissivity': [0.90],
-#    'ground_emissivity':[0.95],
-#    'ground_albedo':[0.30],
-#    'groundtemp': [302],
-   # 'surftemp':[301.2], #approx from jimeno's calulation
-
- #   })
-print model_inputs.latitude[0];
-print model_inputs.longitude[0];
-print model_inputs.time[0];
-print model_inputs.wall_albedo[0];
-print model_inputs.wall_emissivity[0];
-print model_inputs.ground_emissivity[0];
-print model_inputs.ground_albedo[0];
-print model_inputs.groundtemp[0];
-
+model_inputs=pd.read_csv(parent_path+'\Examples\Input_Data\model_inputs.csv')    
 
 myexperiment = {"name":"Example","canyon":96,"cube":32,"AR":0.33, "albedo":0.3, "gridsize":0.125}
 #%% Building the 3D model ('model') and calculating coordinates along the pedestrian grid ('pedkeys'). 

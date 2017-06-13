@@ -8,21 +8,28 @@ TMRT for idealized Matrices. This example is dependent on Step1_Model_SetUp.
 """
 #import pyliburo
 #import ExtraFunctions
-import numpy
-import datetime
+current_path = os.path.dirname("__file__")
+parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
+import imp #importing is causing heaps of problems so we use imp to help us keep our directories straight. 
+thermalcomfort = imp.load_source('thermalcomfort',parent_path+'\\thermalcomfort.py')
+reload(thermalcomfort) #still causing us problems so we reload thermalcomfort just in case
+
 import time
 #%%
 
 #%% Ped Locations 
 simdate = 'Today'
 
+#modelinputs_pathfile = raw_input('Enter the full path of the model input file ')
+#model_inputs=pd.read_csv(modelinputs_pathfile)  
+
 latitude = model_inputs.latitude[0]
 longitude = model_inputs.longitude[0]
 casetime = model_inputs.time[0]
-
+timezone = -8
 # When calculating spatial variation of thermal comfort (i.e. not temporal variation), solar parameters only need to be calculated once
 time1 = time.clock()
-solarparam = thermalcomfort.solar_param(casetime,latitude,longitude,UTC_diff=timezone,groundalbedo=model_inputs.ground_albedo[0]) 
+solarparam = thermalcomfort.calc_solarparam(casetime,latitude,longitude) 
 time2 = time.clock()
 print 'solar_parameters() CALCULATION TIME: ',(time2-time1)/60.0, 'minutes'
 
@@ -43,7 +50,7 @@ for config in cases:
     for index, row in config['TMRT'].data.iterrows(): #For each pedestrian coordinate...
         time1 = time.clock()
         pedkey = (row.x,row.y,row.z) #retrieve the pedestrian's coordinate
-        results = thermalcomfort.all_mrt(pedkey,compound,pdTa,pdReflect,pdTs,solarparam,model_inputs,ped_constants,gridsize=3) #this calculates all steps necessary for MRT calculation.
+        results = thermalcomfort.all_mrt(pedkey,compound,pdTa,pdReflect,pdTs,solarparam,model_inputs,ped_properties,gridsize=3) #this calculates all steps necessary for MRT calculation.
         #see code in part 2 of thermalcomfort.py to see step-by-step explanation of the calculation.        
         row.v = results.TMRT[0]
         time2 = time.clock()
@@ -52,4 +59,6 @@ for config in cases:
     
     #Save results to a csv file    
     config['TMRT'].data.to_csv(config['name'] +  '_'+simdate +'_TMRT.csv')
+
+
 
