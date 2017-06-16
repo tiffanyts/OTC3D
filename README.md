@@ -1,14 +1,12 @@
 # Outdoor Thermal Comfort in 3D (OTC3D) 
 ## Description 
-**Outdoor Thermal Comfort in 3D** is a numerical model for calculating the *spatial variability* of outdoor thermal comfort (OTC), described by a comprehensive thermal comfort metric (currently *Standard Effective Temperature*), in urban areas. This study employs a modular approach, that can be used in combination with existing microclimate simulations, in order to comprehensively and accurately investigates the effects of the built environment. 
-
-;l
-The model can 
-
-- solving the drag and vertical diffusion in a column for a neutral case. This model is based on Santiago and Martilli 2010 and modified by Nazarian et al. 2017 (fortcoming) using the Large Eddy Simulation results. 
+**Outdoor Thermal Comfort in 3D** is a numerical model for calculating the *spatial variability* of outdoor thermal comfort (OTC), described by a comprehensive thermal comfort metric (currently *Standard Effective Temperature*), in urban areas. In order to comprehensively and accurately investigates urban microclimate, this study employs a modular approach, such that OTC3D can be used in combination with existing microclimate tools of urban flow and energy analysis. 
 
 ## Motivations
-1) Improving the parameterization of turbulent length scale by employing a more accurate turbulence model of atmospheric flow (LES vs RANS). 
+1) Desribing outdoor thermal comfort with comrepehsive metrics that integrate air temperature and humidity, as well
+as more complex factors such as solar radiation and wind speed, all interactting with
+the body’s thermal regulation processes.
+
 2) Integrating the parameterization of dispersive stress in the 1D model.  
 
 ## License
