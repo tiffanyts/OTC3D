@@ -37,7 +37,7 @@ Examples of these files are given in the ["Input_Data"](https://github.com/tiffa
 A.	IDEALIZED Array of Buildings  
 Run the file Building_IdealModel.py. The output is idealized set of buildings.
 (i)	Input the file path of the input file.
-<img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/Idealized.png" align="center" width="1000" />
+<img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/Idealized.png" align="center" width="900" />
 
 B. Realistic Urban Configuration (based on the OpenStreetMap)
 ## License
