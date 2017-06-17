@@ -22,11 +22,20 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
 2)	The following libraries are automatically installed by running [thermalcomfort.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py) and [ExtraFunctions.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py)
 
+*The estimated time required for installation is 1hr (?)*
 ## Running OTC3D 
 An example of running OTC3D for a) an idealized array of building, and b) a complex urban configuration is provided. 
 
-#INPUT specification: 
+### Input/Output files 
 The input files required to run the model are as follows. 
+1. XX.csv
+2. YY.csv
+Examples of these files are given in the ["Input_Data"](https://github.com/tiffanyts/OTC3D/tree/master/Examples/Input_Data) directory. 
+
+### GEOMETRY specification:
+A.	IDEALIZED Array of Buildings  
+Run the file Building_IdealModel.py. The output is idealized set of buildings.
+(i)	Input the file path of the input file. (Eg: C:\Users\SHARED1-Tiffany\Dropbox\CENSAM\GitHub\OTC3D\Examples\Input_Data)
 
 ## License
 Currently no license is needed. However, following publications should be cited when using this model:
