@@ -1,13 +1,22 @@
+<img src="icon.png" align="right" />
+
 # Outdoor Thermal Comfort in 3D (OTC3D) 
 ## Description 
-**Outdoor Thermal Comfort in 3D** is a numerical model for calculating the *spatial variability* of outdoor thermal comfort (OTC), described by a comprehensive thermal comfort metric (currently *Standard Effective Temperature*), in urban areas. In order to comprehensively and accurately investigates urban microclimate, this study employs a modular approach, such that OTC3D can be used in combination with existing microclimate tools of urban flow and energy analysis. 
+**Outdoor Thermal Comfort in 3D** is a numerical model for calculating the *spatial variability* of outdoor thermal comfort (OTC) in urban areas. OTC is currently described as *Standard Effective Temperature*, which is a comprehensive thermal comfort metric that represents the human response to the thermal environment.
+
+In order to comprehensively and accurately investigates urban microclimate, OTC3D employs a modular approach, such that the model can be used in combination with existing microclimate tools of urban flow and energy analysis. 
 
 ## Motivations
 1) Desribing outdoor thermal comfort with comrepehsive metrics that integrate air temperature and humidity, as well
-as more complex factors such as solar radiation and wind speed, all interactting with
-the body’s thermal regulation processes.
+as more complex factors such as solar radiation and wind speed, all interactting with the body’s thermal regulation processes.
 
-2) Integrating the parameterization of dispersive stress in the 1D model.  
+2) Considering the detailed spatial variability of outdoor thermal comfort in urban areas, which is highly dependent on the urban form and radiative properties of urban areas. 
+
+3) Describing the human radiant exposure 
+
+## Installation 
 
 ## License
-Currently no license is needed. 
+Currently no license is needed. However, following publications should be cited when using this model:
+Nazarian, N., Fan, J., Sin, T., Norford, L., & Kleissl, J. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.
+
