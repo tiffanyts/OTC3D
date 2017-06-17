@@ -27,7 +27,7 @@ Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](h
 ## Running OTC3D 
 An example of running OTC3D for a) an idealized array of building, and b) a complex urban configuration is provided. 
 
-### Input/Output files 
+### INPUT/OUTPUT files 
 The input files required to run the model are as follows. 
 1. XX.csv
 2. YY.csv
@@ -37,7 +37,7 @@ Examples of these files are given in the ["Input_Data"](https://github.com/tiffa
 A.	IDEALIZED Array of Buildings  
 Run the file Building_IdealModel.py. The output is idealized set of buildings.
 (i)	Input the file path of the input file.
-<img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/Idealized.png" align="center" width="150" />
+<img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/Idealized.png" align="center" width="1000" />
 
 B. Realistic Urban Configuration (based on the OpenStreetMap)
 ## License
