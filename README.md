@@ -20,7 +20,7 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 ## Installation 
 1)	Install Anaconda for python2.7. Instructions on how to install and use Anaconda [here](http://conda.pydata.org/docs/using/envs.html). 
 Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
-2)	The following libraries are automatically installed by running [thermalcomfort.py]()
+2)	The following libraries are automatically installed by running [thermalcomfort.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py) and [ExtraFunctions.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py)
 
 ## License
 Currently no license is needed. However, following publications should be cited when using this model:
