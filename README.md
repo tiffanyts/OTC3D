@@ -1,6 +1,6 @@
 <img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/testfig.png" align="right" width="150" />
 
-# Outdoor Thermal Comfort in 3D (OTC3D) 
+# Outdoor Thermal Comfort in 3D (OTC3D)
 ## Description 
 **Outdoor Thermal Comfort in 3D** is a numerical model for calculating the *spatial variability* of outdoor thermal comfort (OTC) in urban areas. OTC is currently described as *Standard Effective Temperature*, which is a comprehensive thermal comfort metric that represents the human response to the thermal environment.
 
@@ -35,8 +35,9 @@ Examples of these files are given in the ["Input_Data"](https://github.com/tiffa
 ### GEOMETRY specification:
 A.	IDEALIZED Array of Buildings  
 Run the file Building_IdealModel.py. The output is idealized set of buildings.
-(i)	Input the file path of the input file. (Eg: C:\Users\SHARED1-Tiffany\Dropbox\CENSAM\GitHub\OTC3D\Examples\Input_Data)
+(i)	Input the file path of the input file. 
 
+B. Realistic Urban Configuration (based on the OpenStreetMap)
 ## License
 Currently no license is needed. However, following publications should be cited when using this model:
 1. [Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
