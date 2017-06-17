@@ -1,3 +1,4 @@
+
 <img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/testfig.png" align="right" width="150" />
 
 # Outdoor Thermal Comfort in 3D (OTC3D)
@@ -35,7 +36,8 @@ Examples of these files are given in the ["Input_Data"](https://github.com/tiffa
 ### GEOMETRY specification:
 A.	IDEALIZED Array of Buildings  
 Run the file Building_IdealModel.py. The output is idealized set of buildings.
-(i)	Input the file path of the input file. 
+(i)	Input the file path of the input file.
+<img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/Idealized.png" align="center" width="150" />
 
 B. Realistic Urban Configuration (based on the OpenStreetMap)
 ## License
