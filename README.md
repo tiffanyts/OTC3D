@@ -18,9 +18,11 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 4) Streamlining and facilitating the geometry implementation by linking OTC3D with [Python Library for Urban Optimisation](https://github.com/chenkianwee/pyliburo). 
 
 ## Installation 
-
+1)	Install Anaconda for python2.7. Instructions on how to install and use Anaconda [here](http://conda.pydata.org/docs/using/envs.html). 
+Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
+2)	The following libraries are automatically installed by running [thermalcomfort.py]()
 
 ## License
 Currently no license is needed. However, following publications should be cited when using this model:
-Nazarian, N., Fan, J., Sin, T., Norford, L., & Kleissl, J. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.
-
+[Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
+[Chen et al. (2016). Workflow for Generating 3D Urban Models from Open City Data for Performance-Based Urban Design. In Proceedings of the Asim 2016 IBPSA Asia Conference, Jeju, Korea (pp. 27-29).](https://www.researchgate.net/publication/311534516_Workflow_for_Generating_3D_Urban_Models_from_Open_City_Data_for_Performance-Based_Urban_Design)
