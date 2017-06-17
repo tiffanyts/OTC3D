@@ -22,6 +22,12 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
 2)	The following libraries are automatically installed by running [thermalcomfort.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py) and [ExtraFunctions.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py)
 
+## Running OTC3D 
+An example of running OTC3D for a) an idealized array of building, and b) a complex urban configuration is provided. 
+
+#INPUT specification: 
+The input files required to run the model are as follows. 
+
 ## License
 Currently no license is needed. However, following publications should be cited when using this model:
 1. [Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
