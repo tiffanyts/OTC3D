@@ -15,9 +15,10 @@ as more complex factors such as solar radiation and wind speed, all interactting
 3) Describing the human radiant exposure accurately by incorporating a) the visibility of urban surfaces to the pedestrians at
 any point, b) the spatial distribution of sky view factor, and c) inter-building shadowing and shortwave radiation effects on thermal comfort.
 
-4) Streamlining and facilitating the geometry implementation by linking OTC3D with [You can use numbers for reference-style link definitions](https://github.com/chenkianwee/pyliburo)
+4) Streamlining and facilitating the geometry implementation by linking OTC3D with [Python Library for Urban Optimisation](https://github.com/chenkianwee/pyliburo). 
 
 ## Installation 
+
 
 ## License
 Currently no license is needed. However, following publications should be cited when using this model:
