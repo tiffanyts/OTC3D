@@ -1,4 +1,4 @@
-<img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/testfig.png" align="right" />
+<img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/testfig.png" align="right" width="20" />
 
 # Outdoor Thermal Comfort in 3D (OTC3D) 
 ## Description 
