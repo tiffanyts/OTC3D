@@ -22,7 +22,8 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 1)	Install Anaconda for python2.7. Instructions on how to install and use Anaconda [here](http://conda.pydata.org/docs/using/envs.html). 
 Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
 2)	The following libraries are automatically installed by running [thermalcomfort.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py)**
-======
+
+----------------
 ###### * Pvlib 
 
 ###### * lxml ((BSD) libxml2 and libxslt2 (MIT))
@@ -46,8 +47,9 @@ Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](h
 ###### * cvxopt (GNU General Public License v3.0)
 
 ###### * matplotlib 
-======
+----------------
 
+https://github.com/nenazarian/thermalcomfort/blob/master/ComplexConfiguration.png
 
 *The estimated time required for installation is 1hr (?)*
 ## Running OTC3D 
@@ -66,6 +68,8 @@ Run the file Building_IdealModel.py. The output is idealized set of buildings.
 <img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/Idealized.png" align="center" width="900" />
 
 B. Realistic Urban Configuration (based on the OpenStreetMap)
+<img src="https://github.com/nenazarian/thermalcomfort/blob/master/ComplexConfiguration.png" align="center" width="700" />
+
 ## License
 Currently no license is needed. However, following publications should be cited when using this model:
 1. [Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
