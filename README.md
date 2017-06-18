@@ -48,9 +48,6 @@ Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](h
 
 ###### * matplotlib 
 ----------------
-
-https://github.com/nenazarian/thermalcomfort/blob/master/ComplexConfiguration.png
-
 *The estimated time required for installation is 1hr (?)*
 ## Running OTC3D 
 An example of running OTC3D for a) an idealized array of building, and b) a complex urban configuration is provided. 
