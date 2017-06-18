@@ -23,29 +23,29 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
 2)	The following libraries are automatically installed by running [thermalcomfort.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py)**
 
-##### * Pvlib 
+###### * Pvlib 
 
-* #####lxml ((BSD) libxml2 and libxslt2 (MIT))
+###### * lxml ((BSD) libxml2 and libxslt2 (MIT))
 
-* #####pyshp (mit license)
+###### * pyshp (mit license)
 
-* #####pythonocc (GNU LGPL3)
+###### * pythonocc (GNU LGPL3)
 
-* #####numpy (BSD 3-clause "New" or "Revised" License)
+###### * numpy (BSD 3-clause "New" or "Revised" License)
 
-* #####scipy (BSD 3-clause "New" or "Revised" License)
+###### * scipy (BSD 3-clause "New" or "Revised" License)
 
-* #####pycollada (BSD 3-clause "New" or "Revised" License)
+###### * pycollada (BSD 3-clause "New" or "Revised" License)
 
-* #####networkx (BSD 3-clause "New" or "Revised" License)
+###### * networkx (BSD 3-clause "New" or "Revised" License)
 
-* #####scikit-learn (BSD 3-clause "New" or "Revised" License)
+###### * scikit-learn (BSD 3-clause "New" or "Revised" License)
 
-* #####pymf
+###### * pymf
 
-* #####cvxopt (GNU General Public License v3.0)
+###### * cvxopt (GNU General Public License v3.0)
 
-* #####matplotlib 
+###### * matplotlib 
 
 
 
