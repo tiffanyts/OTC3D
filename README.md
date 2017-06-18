@@ -23,7 +23,7 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
 2)	The following libraries are automatically installed by running [thermalcomfort.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py)**
 
-* #####Pvlib 
+#####* Pvlib 
 
 * #####lxml ((BSD) libxml2 and libxslt2 (MIT))
 
