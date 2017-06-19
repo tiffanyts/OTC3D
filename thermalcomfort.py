@@ -70,10 +70,10 @@ def read_pdcoord(csv_inputfile,separator = ','):
     else:
         try:     # if it's a csv file, read csv directly into a dataframe
             csv_input= pd.read_csv(csv_inputfile,sep=separator,skiprows=[0],header=None,names = ['x','y','z','v']) # r"\s+" is whitespace
-        except IOError:   # If it's a numpy array, convert to pdframe
+        except ValueError:   # If it's a numpy array, convert to pdframe
             try:
                 csv_input = pd.DataFrame(np.array(csv_inputfile), columns = ['x','y','z','v'])
-            except IOError:
+            except ValueError:
                 print "Incorrect Input: read_pdcoord requires the input of a 4-column csv file, numpy array, or pandas dataframe." 
                 return None
     csv_input.sortlevel(axis=0,inplace=True,sort_remaining=True)
