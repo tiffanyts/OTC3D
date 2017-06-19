@@ -55,12 +55,15 @@ The following libraries are automatically installed by running [thermalcomfort.p
 ----------------
 *The estimated time required for installation is 1hr (?)*
 ## Running OTC3D 
-An example of running OTC3D for a) an idealized array of building, and b) a complex urban configuration is provided. 
+1. Run thermalcomfort.py in the home directory of Python/Spyder. 
+2. Run ExtraFunctions.py in the home directory of Python/Spyder. 
+3. Execute the example code in the _same_ directory as thermalcomfort.py and ExtraFunctions.py. 
+An example of running OTC3D for a) an idealized array of building, and b) a complex urban configuration is provided in the  ["Examples"](https://github.com/tiffanyts/OTC3D/tree/master/Examples) folder of this repository. 
 
 ### INPUT/OUTPUT files 
-The input files required to run the model are as follows. 
-1. XX.csv
-2. YY.csv
+The input files required to run the model are as follows: 
+1. ped_properties.csv
+2. model_inputs.csv
 Examples of these files are given in the ["Input_Data"](https://github.com/tiffanyts/OTC3D/tree/master/Examples/Input_Data) directory. 
 
 ### GEOMETRY specification:
