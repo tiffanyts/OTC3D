@@ -10,8 +10,8 @@ Please see examples for the implementation of OTC3D.
 This code is in three parts. After importing the necessary modules, the first section determines the pdcoord helper class, which is used to pass spatial data around.
 The second section provides the mean radiant temperature calculation. It is comprised of several smaller functions that are combined in sequence in the function all_mrt()
 The final section consists of the SET calculation, which relies on inputs as defined in the example.  
-
 """
+# Neg
 #
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
