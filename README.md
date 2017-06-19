@@ -80,3 +80,30 @@ Currently no license is needed. However, following publications should be cited 
 1. [Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
 
 2. [Chen et al. (2016). Workflow for Generating 3D Urban Models from Open City Data for Performance-Based Urban Design. In Proceedings of the Asim 2016 IBPSA Asia Conference, Jeju, Korea (pp. 27-29).](https://www.researchgate.net/publication/311534516_Workflow_for_Generating_3D_Urban_Models_from_Open_City_Data_for_Performance-Based_Urban_Design)
+
+## Explanation of Calculations
+In this module, functions rely on a helper class **pdcoord** that standardize a pandas Dataframe as one with four columns consisting of _{x,y,z}_ coordinates and the corresponding value _v_. The pdcoord class is used to pass microclimate data and calculations between functions.
+
+* **solar_param(*time,latitude,longitude, timezone, groundalbedo*)** uses PVLib to calculate solar parameters needed in the thermal comfort model. Returns a DataFrame of solar vector, solar view factor, direct solar radiation intensity, and diffuse solar radiation intensities from the sky and the ground
+
+* **check_shadow(*key, model, solarvector*)** checks if location *key* is shaded by the *model* when solar radiation is incident at the \textit{solarvector} direction, and returns 0 if the location is shaded, and 1 if the location is sunlit.
+
+* **skyviewfactor(*key, model*)** calculates SVF at the *key* location. This function is can be replaced by fourpiradiation, which combines the calculation with groundview and wall visibility.
+
+* **fourpiradiation(*ped, model*)** constructs the discretized sphere of directions at the *key* location, and returns SVF, ground view factor, and a list of points of intercepts on wall surfaces visible to the pedestrian. 
+
+* **call_values(*intercepts, surfpdcoord, gridsize*)** is given a list of intercepts, a pdcoord of surface values, and the grid size, and returns a list of values at the intercepts.
+
+* **calc_radiation_from_values(*SurfTemp, SurfReflect, SurfEmissivity*)** returns the amount of long and shortwave radiation from urban surfaces by calculating the Stefan-Boltzmann law for the values returned by **call_values()**
+
+* **calc_Esky_emis(*Ta,RH*)** calculates longwave radiation from the sky based on the ambient temperature $T_{a}$ and relative humidity $RH$.
+
+* **meanradtemp(*Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF, pedestrian_albedo, shadow*)** calculates mean radiant temperature $T_{mrt}$ from different sources of radiation in the urban environment.
+
+* **all\_ mrt(*key, compound, pdAirTemp, pdReflect, pdSurfTemp, solarparam,model_inputs, ped_constants*)** is given microclimate data, pedestrian information, and the urban model, and calculates the necessary components for **meanradtemp()** at location *key*. Returns $T_{mrt}$, longwave and shortwave radiation components, SVF and shading effects.
+
+* **calc\_ SET(*microclimate, ped_constants, ped_properties*)** returns SET at one location with the given inputs:
+       * *ped_properties* : Pedestrian properties, including height, skin wetness, mass, and weight, ratio of effective radiation area of the body (Fanger 1967), body emissivity, body albedo, metabolic rate, work activity, and clothing levels.
+       * *microclimate* : Microclimate parameters, including air temperature, wind speed, mean radiant temperature, and relative humidity.
+
+
