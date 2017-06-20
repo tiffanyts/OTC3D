@@ -18,7 +18,7 @@ any point, b) the spatial distribution of sky view factor, and c) inter-building
 
 4) Streamlining and facilitating the geometry implementation by linking OTC3D with [Python Library for Urban Optimisation](https://github.com/chenkianwee/pyliburo). 
 
-## Installation 
+## Installation of OTC3D
 1)	Install Anaconda for python2.7. Instructions on how to install and use Anaconda [here](http://conda.pydata.org/docs/using/envs.html). 
 Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](https://pythonhosted.org/spyder/installation.html).
 2) Download and insall the following libraries (execute these commands in Anaconda prompt): 
