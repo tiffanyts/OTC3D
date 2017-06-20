@@ -1,8 +1,15 @@
 
 <img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/testfig.png" align="right" width="150" />
+
 ### Table of Contents
 
 **[Description](#1.-description)**<br>
+**[Description](#2.-motivations)**<br>
+**[Description](#3.-installation-of-OTC3D)**<br>
+**[Description](#1.-running-OTC3D)**<br>
+**[Description](#2.-license)**<br>
+
+
 
 
 # Outdoor Thermal Comfort in 3D (OTC3D)
