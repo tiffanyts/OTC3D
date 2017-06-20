@@ -29,29 +29,7 @@ Alternatively, you can insall Spyder 2.3.8 by following the steps given [here](h
 The following libraries are automatically installed by running [thermalcomfort.py](https://github.com/tiffanyts/OTC3D/blob/master/ExtraFunctions.py)**
 
 ----------------
-###### * Pvlib 
-
-###### * lxml ((BSD) libxml2 and libxslt2 (MIT))
-
-###### * pyshp (mit license)
-
-###### * pythonocc (GNU LGPL3)
-
-###### * numpy (BSD 3-clause "New" or "Revised" License)
-
-###### * scipy (BSD 3-clause "New" or "Revised" License)
-
-###### * pycollada (BSD 3-clause "New" or "Revised" License)
-
-###### * networkx (BSD 3-clause "New" or "Revised" License)
-
-###### * scikit-learn (BSD 3-clause "New" or "Revised" License)
-
-###### * pymf
-
-###### * cvxopt (GNU General Public License v3.0)
-
-###### * matplotlib 
+###### * Pvlib / pyliburo /  pythonocc (GNU LGPL3) / numpy (BSD 3-clause "New" or "Revised" License) / Pandas ("New" or "Revised" License) / scipy (BSD 3-clause "New" or "Revised" License) / matplotlib / pymf / cvxopt (GNU General Public License v3.0) / scikit-learn (BSD 3-clause "New" or "Revised" License) /  pyshp (mit license) / pycollada (BSD 3-clause "New" or "Revised" License) /networkx (BSD 3-clause "New" or "Revised" License) / lxml ((BSD) libxml2 and libxslt2 (MIT))
 ----------------
 *The estimated time required for installation is 1hr (?)*
 ## Running OTC3D 
@@ -74,12 +52,6 @@ Run the file Building_IdealModel.py. The output is idealized set of buildings.
 
 #### B. Realistic Urban Configuration (based on the OpenStreetMap)
 <img src="https://github.com/nenazarian/thermalcomfort/blob/master/ComplexConfiguration.png" align="center" width="700" />
-
-## License
-Currently no license is needed. However, following publications should be cited when using this model:
-1. [Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
-
-2. [Chen et al. (2016). Workflow for Generating 3D Urban Models from Open City Data for Performance-Based Urban Design. In Proceedings of the Asim 2016 IBPSA Asia Conference, Jeju, Korea (pp. 27-29).](https://www.researchgate.net/publication/311534516_Workflow_for_Generating_3D_Urban_Models_from_Open_City_Data_for_Performance-Based_Urban_Design)
 
 ## Explanation of Calculations
 In this module, functions rely on a helper class **pdcoord** that standardize a pandas Dataframe as one with four columns consisting of _{x,y,z}_ coordinates and the corresponding value _v_. The pdcoord class is used to pass microclimate data and calculations between functions.
@@ -105,5 +77,11 @@ In this module, functions rely on a helper class **pdcoord** that standardize a 
 * **calc\_ SET(*microclimate, ped_constants, ped_properties*)** returns SET at one location with the given inputs:
        * *ped_properties* : Pedestrian properties, including height, skin wetness, mass, and weight, ratio of effective radiation area of the body (Fanger 1967), body emissivity, body albedo, metabolic rate, work activity, and clothing levels.
        * *microclimate* : Microclimate parameters, including air temperature, wind speed, mean radiant temperature, and relative humidity.
+## License
+Currently no license is needed. However, following publications should be cited when using this model:
+1. [Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
+
+2. [Chen et al. (2016). Workflow for Generating 3D Urban Models from Open City Data for Performance-Based Urban Design. In Proceedings of the Asim 2016 IBPSA Asia Conference, Jeju, Korea (pp. 27-29).](https://www.researchgate.net/publication/311534516_Workflow_for_Generating_3D_Urban_Models_from_Open_City_Data_for_Performance-Based_Urban_Design)
+
 
 
