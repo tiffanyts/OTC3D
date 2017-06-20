@@ -1,18 +1,14 @@
 
 <img src="https://github.com/nenazarian/thermalcomfort/blob/master/Examples%20and%20Graphs/testfig.png" align="right" width="150" />
 
-### Table of Contents
-
-**[Description](#1.-description)**<br>
-**[Description](#2.-motivations)**<br>
-**[Description](#3.-installation-of-OTC3D)**<br>
-**[Description](#1.-running-OTC3D)**<br>
-**[Description](#2.-license)**<br>
-
-
-
 
 # Outdoor Thermal Comfort in 3D (OTC3D)
+**[Description](#1.-description)**<br>
+**[Motivations](#2.-motivations)**<br>
+**[Installation of OTC3D](#3.-installation-of-OTC3D)**<br>
+**[Running OTC3D](#1.-running-OTC3D)**<br>
+**[License](#2.-license)**<br>
+
 ## 1. Description 
 **Outdoor Thermal Comfort in 3D** is a numerical model for calculating the *spatial variability* of outdoor thermal comfort (OTC) in urban areas. OTC is currently described as *Standard Effective Temperature*, which is a comprehensive thermal comfort metric that represents the human response to the thermal environment.
 
