@@ -6,7 +6,7 @@
 **[Description](#1.-description)**<br>
 **[Motivations](#2.-motivations)**<br>
 **[Installation of OTC3D](#3.-installation-of-OTC3D)**<br>
-**[Running OTC3D](#1.-running-OTC3D)**<br>
+**[Running OTC3D](#1.-running-OTC3D)
 **[License](#2.-license)**<br>
 
 ## 1. Description 
