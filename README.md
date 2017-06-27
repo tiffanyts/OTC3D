@@ -84,7 +84,7 @@ In this module, functions rely on a helper class **pdcoord** that standardize a 
 * **calc\_ SET(*microclimate, ped_constants, ped_properties*)** returns SET at one location with the given inputs:
        * *ped_properties* : Pedestrian properties, including height, skin wetness, mass, and weight, ratio of effective radiation area of the body (Fanger 1967), body emissivity, body albedo, metabolic rate, work activity, and clothing levels.
        * *microclimate* : Microclimate parameters, including air temperature, wind speed, mean radiant temperature, and relative humidity.
-## License
+## 5. License
 Currently no license is needed. However, following publications should be cited when using this model:
 1. [Nazarian et al. (2017). Predicting outdoor thermal comfort in urban environments: A 3D numerical model for standard effective temperature. Urban Climate.]( https://www.researchgate.net/publication/316115262_Predicting_outdoor_thermal_comfort_in_urban_environments_A_3D_numerical_model_for_standard_effective_temperature)
 
