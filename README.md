@@ -12,7 +12,7 @@
 ## 1. Description 
 **Outdoor Thermal Comfort in 3D** is a numerical model for calculating the *spatial variability* of outdoor thermal comfort (OTC) in urban areas. OTC is currently described as **Standard Effective Temperature**, which is a comprehensive thermal comfort metric that represents the human response to the thermal environment.
 
-In order to comprehensively and accurately investigates urban microclimate, OTC3D employs a** modular approach**, such that the model can be used in combination with existing microclimate tools of urban flow and energy analysis with different levels of spatial and temporal resolutions. 
+In order to comprehensively and accurately investigates urban microclimate, OTC3D employs a **modular approach**, such that the model can be used in combination with existing microclimate tools of urban flow and energy analysis with different levels of spatial and temporal resolutions. 
 
 ## 2. Motivations
 1) Desribing outdoor thermal comfort with a **comrepehsive metric** that integrate air temperature and humidity, as well
