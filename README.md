@@ -81,7 +81,7 @@ In this module, functions rely on a helper class **pdcoord** that standardize a 
 * **all\_ mrt(*key, compound, pdAirTemp, pdReflect, pdSurfTemp, solarparam,model_inputs, ped_constants*)** is given microclimate data, pedestrian information, and the urban model, and calculates the necessary components for **meanradtemp()** at location *key*. Returns $T_{mrt}$, longwave and shortwave radiation components, SVF and shading effects.
 
 * **calc\_ SET(*microclimate, ped_constants, ped_properties*)** returns SET at one location with the given inputs:
-       * *ped_properties* : Pedestrian properties, including height, skin wetness, mass, and weight, ratio of effective radiation area of the body (Fanger 1967), body emissivity, body albedo, metabolic rate, work activity, and clothing levels.
+       * *ped_properties* : Pedestrian properties, including height, skin wetness, mass, ratio of effective radiation area of the body (Fanger 1967), body emissivity, body albedo, metabolic rate, work activity, and clothing levels.
        * *microclimate* : Microclimate parameters, including air temperature, wind speed, mean radiant temperature, and relative humidity.
 ## 5. License
 Currently no license is needed. However, following publications should be cited when using this model:
