@@ -257,9 +257,8 @@ def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18):
     intensities from the sky and the ground """
 
     time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
-    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min') # pd.to_datetime(pd.Timestamp(casetime)) # pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
-    #thistime = pd.DatetimeIndex([pd.to_datetime(time_str,format= '%B %d %Y %H:%M')])
-    thisloc = pvlib.location.Location(51.4826,  0.0077, tz='UTC', altitude=0, name=None)
+    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min')  - time_shift
+    thisloc = pvlib.location.Location(latitude,  longitude, tz='UTC', altitude=0, name=None)
     solpos = thisloc.get_solarposition(thistime)    
     
     sunpz = np.sin(np.radians(solpos.elevation[0])); hyp = np.cos(np.radians(solpos.elevation[0]))
