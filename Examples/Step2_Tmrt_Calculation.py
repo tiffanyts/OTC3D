@@ -75,4 +75,4 @@ for config in cases:
     config['TMRT'].data.to_csv(config['name']+ '_'+simdate +'_TMRT.csv')
     config['TMRT'].scatter3d()
 time2 = time.clock()
-print 'TOTAL CALCULATION TIME: ',(time2-time1)/60.0, 'minutes'
+print 'TOTAL CALCULATION TIME: ',(time2-time1), 'minutes'
