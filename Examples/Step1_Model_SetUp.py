@@ -13,19 +13,9 @@ import ExtraFunctions
 import thermalcomfort 
 import pyliburo
 import pandas as pd
-install_and_import('easygui') #move this to thermal comfort..
 
 import easygui
-print("Navigate to thermal comfort file ")
-thermalcomfortpath=easygui.fileopenbox()
-print("Navigate to Extra Functions file ")
-extrafunctionspath=easygui.fileopenbox()
 
-import imp #importing is causing heaps of problems so we use imp to help us keep our directories straight. 
-#thermalcomfort = imp.load_source('thermalcomfort',thermalcomfortpath)
-#ExtraFunctions = imp.load_source('ExtraFunctions',extrafunctionspath)
-#reload(thermalcomfort) #still causing us problems so we reload thermalcomfort just in case
-#reload(ExtraFunctions)
 #%%a
 
 def install_and_import(package):
@@ -48,9 +38,10 @@ current_path = os.path.dirname("__file__")
 parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
 folderpath = os.path.join(parent_path,"Outputs_"+simdate) #location to save results
 #%% SET Input
-print("Navigate to ped_propeties file ")
+# Navigate to the input files given in the example file 
+print("Navigate to ped_propeties file that includes the specifications of the pedestrain")
 ped_properties=pd.read_csv(easygui.fileopenbox())
-print("Navigate to model_inputs file ")
+print("Navigate to model_inputs file that includes the specification of the day and time ")
 model_inputs=pd.read_csv(easygui.fileopenbox())    
 
 myexperiment = {"name":"Example","canyon":96,"cube":32,"AR":0.33, "albedo":0.3, "gridsize":0.125}
@@ -67,7 +58,8 @@ for config in cases:
     #3 calculate the coordinates of the pedestrian keys.
     # 3a) coordinates within your area of study. 'square' is an outer boundary
     a,b,c,d = pyliburo.py3dmodel.fetch.pyptlist_frm_occface(config['square']) 
-    config['pedkeys'] = np.array([(x,y,ped_properties.height[0]) for x in np.linspace( a[0],c[0],25) for y in np.linspace( a[1],c[1],25)])
+    # The number of grids are set to 10 in x and y (100-building grid points in total). This value can be changed for accuracy. 
+    config['pedkeys'] = np.array([(x,y,ped_properties.height[0]) for x in np.linspace( a[0],c[0],10) for y in np.linspace( a[1],c[1],10)])
     config['pedkeys'] = np.array([ [x,y,z] for [x,y,z] in config['pedkeys'] if (((x >= a[0]) & (x <= c[0])) & ((y >= a[1]) &(y <= c[1]) ))  ])
     
     # 3b) remove coordinates inside of the central building. 'lil_square' is an inner boundary.
@@ -76,10 +68,11 @@ for config in cases:
     config['pedkeys'] = np.array([ [x,y,z] for [x,y,z] in config['pedkeys'] if not (((x > l[0]-config['gridsize']) & (x < n[0]+config['gridsize'])) & ((y > l[1]-config['gridsize']) &(y < n[1]+config['gridsize']) ))  ])
 
 #%% Importing Thermal data. The sample data here was retrived from the results of a TUFIOBES model of the same building geometry. 
+# The temperature and wind data are in a 2D matrix data format at the pedestrian height 
 
 #run Importing_TUFIOBES first
 for config in cases:
-    therm_input = pd.read_csv(os.path.join(parent_path,'Examples','Input_Data',config["name"]+'_surface_data.csv'),delimiter=",",usecols=(2,3,4,6,7,8))
+    therm_input = pd.read_csv(os.path.join(current_path,'Input_Data',config["name"]+'_surface_data.csv'),delimiter=",",usecols=(2,3,4,6,7,8))
 #    
     config['Tsurf_ground'] = thermalcomfort.pdcoord(therm_input[therm_input['0']=='ground'][['x','y','z','temp']])
     config['Tsurf'] = thermalcomfort.pdcoord(therm_input[['x','y','z','temp']])
@@ -101,14 +94,14 @@ for config in cases:
 ##    
 for config in cases:
     #Detailed spatial air temperature is unavailable for this example, so a bulk temperature is taken from an energy balance model (TUFIOBES) for the time of day of this experiment. 
-    hour = pd.DatetimeIndex([pd.to_datetime(model_inputs.time[0],format= '%b %d %Y %H:%M')]).hour[0]
+    hour = pd.DatetimeIndex([pd.to_datetime(model_inputs.time[0])]).hour[0]
     otherthermal = pd.read_csv(os.path.join(parent_path,'Examples','Input_Data','Example_thermal_data.out'),usecols=[5,6,15],header=None,sep='\s+',names=['day','hour','temperature'])
     otherthermal['hour']= otherthermal['hour'].apply(np.round)
     config['Tair'] = np.mean(otherthermal[otherthermal['hour']==hour]['temperature'])
 
 #%% Importing Wind. The sample data here was taken from a CFD model of the same geometry. The data was provided as a matrix, as opposed to coordinates, according to the mesh grid.  
 
-myexperiment['wind_input'] = np.loadtxt(os.path.join(parent_path,'Examples','Input_Data','Example_wind_input_matrix'))
+myexperiment['wind_input'] = np.loadtxt(os.path.join(current_path,'Input_Data','Example_wind_input_matrix'))
 for config in cases: 
     # Since the CFD output is provided as a matrix, and not with coordinates, it needs to be 'fitted' to the area of study and converted into pdcoord.   
     dim = int(config['wind_input'].shape[0]) 
@@ -122,5 +115,6 @@ for config in cases:
 
 #%% If you've already calculated mean radiant temperature (Tmrt), import it and skip straight to SET calculations. 
 #for config in cases:
-#    config['TMRT'] = thermalcomfort.pdcoord(os.path.join(folderpath,config['name'] +  '_'+simdate+'_TMRT.csv'))
+#    simdate = 'Today'
+#    config['TMRT'] = thermalcomfort.pdcoord(os.path.join(current_path,config['name'] +  '_'+simdate+'_TMRT.csv'))
     
