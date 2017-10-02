@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jan 16 16:23:35 2017
-@author: Tiffany Sin 2017
+@author: Tiffany Sin, Negin Nazarian 2017
 
 TMRT for idealized Matrices. This example is dependent on Step1_Model_SetUp. 
 
