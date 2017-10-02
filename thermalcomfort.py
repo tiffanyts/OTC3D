@@ -55,8 +55,10 @@ def read_pdcoord(csv_inputfile,separator = ','):
     if type(csv_inputfile)== pd.core.frame.DataFrame: #If inputdata is already a dataframe, rename columns to ('x','y','z','v')
         csv_input = csv_inputfile 
         csv_input.columns =['x','y','z','v']
+        print "Data input from file in the x, y, z, v column format "
     elif csv_inputfile == 'Empty':  #Create an empty dataframe. 
         csv_input = pd.DataFrame(columns = ['x','y','z','v'])
+        print "Warning: the input file is empty. An empty dataframe created."
     else:
         try:     # if it's a csv file, read csv directly into a dataframe
             csv_input= pd.read_csv(csv_inputfile,sep=separator,skiprows=[0],header=None,names = ['x','y','z','v']) # r"\s+" is whitespace
@@ -137,7 +139,8 @@ class pdcoord(object):
         return self
 
     def val_at_coord(self,listcoord, radius = 1):
-        """ Returns the values of a pdcoord at a target coordinate, within a distance of the radius. 
+        """ This calculation is used to make the input data and the desired OTC calculation compatible and 
+        Returns the values of a pdcoord at a target coordinate, within a distance of the radius. 
         Input coordinates as a list ([X,Y,Z], [X], or [X,Y]). If only X or only X,Y are given, returns selected dataframe. 
         Range of selection can be widened or narrowed with the radius.
         For a single value result, take the mean of the resulting pdcoord. e.g. surfpdcoord.val_at_coord(listcoord,radius = 5).v.mean()"""
@@ -238,7 +241,7 @@ Ndir = 200 # This value can be modified based on the resolution accuracy
 unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
 sigma =5.67*10**(-8)  
 
-#%%
+#%% Step 1 - solar parameters 
 
 def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,human=True, TC=0):
     """ This function uses PVLib to calculate solar parameters. 
@@ -246,17 +249,18 @@ def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,h
     direct solar radiation intensity, and diffuse solar radiation 
     intensities from the sky and the ground """
 
-    time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
-    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min') - time_shift # pd.to_datetime(pd.Timestamp(casetime)) # pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
-    thisloc = pvlib.location.Location(latitude, longitude,tz='UTC', altitude=0, name=None) #51.4826,  0.0077,
-    solpos = thisloc.get_solarposition(thistime)    
+    time_shift = datetime.timedelta(hours=UTC_diff) #example SGT is UTC+8, if not included, UTC=0      
+    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min') - time_shift # To correct the local time based on the UTC time zone
+    thisloc = pvlib.location.Location(latitude, longitude,tz='UTC', altitude=0, name=None) #example outputs 51.4826,  0.0077,
     
+    # Solar position and the vector components 
+    solpos = thisloc.get_solarposition(thistime) 
     sunpz = np.sin(np.radians(solpos.elevation[0])); hyp = np.cos(np.radians(solpos.elevation[0]))
     sunpy = hyp*np.cos(np.radians(solpos.azimuth[0]))
     sunpx = hyp*np.sin(np.radians(solpos.azimuth[0]))
     
     solar_pmt =  thisloc.get_clearsky(thistime,model='ineichen') #
-    E_sol= solar_pmt['dni'][0] #direct normal solar irradiation  [W/m^2]
+    E_sol= solar_pmt['dni'][0] #direct normal solar irradiation  [W/m^2] for clear sky 
     """ Estimation of solar radiation based on total cloud cover (TC) by Luo et al 2010"""
     """ TC takes a value between 0 and 0.8. """ 
     """ E0_Ec is the ratio of observed solar radiation to clear-sky solar radiation """ 
@@ -264,9 +268,10 @@ def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,h
     N=1.0-E0_Ec
     E_sol=E_sol*(1.0-N)
     Ground_Diffuse = pvlib.irradiance.grounddiffuse(90,solar_pmt['ghi'],albedo =groundalbedo)[0]  # Diffuse radiation received on the vertical human body based on reflected solar radiation from the ground [W/m^2]
-    Sky_Diffuse =  pvlib.irradiance.isotropic(90, solar_pmt['dhi'])[0] #Diffuse Solar Irradiation - vertical surface[W/m^2].        
+    Sky_Diffuse =  pvlib.irradiance.isotropic(90, solar_pmt['dhi'])[0] #Diffuse Solar Irradiation [W/m^2].        
     
-    #Formula 9 in Huang et. al. for a standing person, largely independent of gender, body shape and size. For a sitting person, approximately 0.25
+    """ Formula 9 in Huang et. al. 2014 1966 from Underwood and Ward  for a standing person, 
+    largely independent of gender, body shape and size. For a sitting person, approximately 0.25 """ 
     if human:
         solarvf=abs(0.0355*np.sin(solpos.elevation[0])+2.33*np.cos(solpos.elevation[0])*(0.0213*np.cos(solpos.azimuth[0])**2+0.00919*np.sin(solpos.azimuth[0])**2)**(0.5)); 
     else:
@@ -280,7 +285,7 @@ def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,h
     'diffuse_frm_ground':[Ground_Diffuse]
     })    
     return results
-#%%
+#%% Step 2 - Check shadow 
 
 def check_shadow(key, model, solarvector):
     occ_interpt, occ_interface = pyliburo.py3dmodel.calculate.intersect_shape_with_ptdir(model,key,solarvector)
@@ -294,6 +299,7 @@ def get_shadow(pedestrian_keys, model,solar_vector):
     shadow.data['v'] = shadow.data.apply(lambda row: check_shadow((row['x'], row['y'], row['z']),model, solar_vector), axis=1)
     return shadow
 
+#%% Step 3 - SVF and Visibility using the fourpiradiation (see Yin et al. 2013) 
 def fourpiradiation(key, model):
     """ returns SVF, number of ground points (N), and list of intercepts. 
     For uniform ground temperature, do not include ground surface in model. Longwave irradiance from ground can be calculated as emissivity*sigma*groundtemp**4*N/Ndir 
@@ -314,19 +320,19 @@ def fourpiradiation(key, model):
     SVF = (sky)/(len(unitball.getDirUpperHemisphere()));
     GVF = (ground)/(len(unitball.getDirLowerHemisphere()));
     return SVF, GVF, np.array(intercepts)
-
+#%% Step 4
 def call_values(intercepts, surfpdcoord, gridsize):
     """ Given a list of intercepts, a pdcoord of surface values, and the grid size, a list of values is returned """
     visibletemps = [surfpdcoord.val_at_coord(target,gridsize).v.mean() for target in intercepts]
     return np.array(visibletemps)
-    
+ #%% Step 5
 def calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity):
     """ List of values for visible surface parameters. returns long and shortwave radiative components. Assumes that lists are in order and of the same length"""
     sigma =5.67*10**(-8)    
     longwave =  sum([emissivity*sigma*temp**4/Ndir for temp, emissivity in zip(SurfTemp,SurfEmissivity)])
     shortwave =  sum([reflect/Ndir for reflect in SurfReflect])
     return longwave, shortwave
-
+#%% Step 6 
 def calc_Esky_emis(Ta,RH,TC=0):
     """ returns scalar of longwave radiation from the sky, that needs to be factored by SVF  """
     sigma =5.67*10**(-8)
@@ -340,7 +346,7 @@ def calc_Esky_emis(Ta,RH,TC=0):
     skyemis=N+(1-N)*(1.0-0.261*np.exp(-7.77*10**(-4)*(273.16-TaK)**2)) #Idso and Jackson 1096
     Esky = sigma*(TaK**4)*skyemis
     return Esky
-
+#%% Step
 def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_albedo, pedestrian_emiss=0.97, shadow=False):
     """ calculates Stefan-Boltzmann equation for mean radiant temperature, from different sources of radiation in the urban environment """
     sigma =5.67*10**(-8)
