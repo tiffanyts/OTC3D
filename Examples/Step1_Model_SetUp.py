@@ -2,7 +2,7 @@
 """
 Created on Fri Feb 10 21:46:47 2017
 Importing the correct files
-@author: Tiffany Sin 2017 
+@author: Tiffany Sin Negin Nazarian 2017 
 """
 import os
 import datetime
