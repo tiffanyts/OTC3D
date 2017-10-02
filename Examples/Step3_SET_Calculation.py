@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jan 17 09:43:35 2017
-@author: Tiffany Sin, Negin Nazarian 2017 
+@author: Tiffany Sin, Negin Nazarian 2017
 
 After calculating TMRT and importing initial information, SET can be calculated at every pedestrian location. This example is dependent on previous steps. 
 """
@@ -18,6 +18,7 @@ simdate = time.strftime("%b %Y")
 
 #%% Microclimate
 cases = [myexperiment]
+time1 = time.clock()
 for config in cases:
     Tmrt = config['TMRT']
     pedkeys  = config['pedkeys'] #imported previously. 
@@ -38,8 +39,10 @@ for config in cases:
         row.v = thermalcomfort.calc_SET(microclimate,ped_properties)    
         time2 = time.clock()
         tottime = (time2-time1)/60.0
-        print  ' row ' , index,  ' | SET is ', row.v ,'. TIME TAKEN', tottime
+       # print  ' row ' , index,  ' | SET is ', row.v ,'. TIME TAKEN', tottime
 
     config['SET'].data.to_csv(config['name'] + '_'+simdate +'_SET.csv')
-    plt.figure()
     config['SET'].scatter3d()
+
+time2 = time.clock()
+print 'TOTAL CALCULATION TIME: ',(time2-time1), 'minutes'
