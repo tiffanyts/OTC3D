@@ -246,7 +246,6 @@ def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,h
     direct solar radiation intensity, and diffuse solar radiation 
     intensities from the sky and the ground """
 
-    print UTC_diff
     time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
     thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min') - time_shift # pd.to_datetime(pd.Timestamp(casetime)) # pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
     thisloc = pvlib.location.Location(latitude, longitude,tz='UTC', altitude=0, name=None) #51.4826,  0.0077,
@@ -475,7 +474,7 @@ def calc_SET(microclimate,ped_properties):
     v0 =0.08 #reference wind speed
     #to= Ta+ (1. - 0.73*wind_speed**0.2)*(microclimate['mean_radiant_temperature'][0]- Ta)   # ISO 7726 , qtd in Kazkaz 2012
     
-    print microclimate['mean_radiant_temperature']
+   # print microclimate['mean_radiant_temperature']
     if wind_speed < 0.08:
         to =  (hr*(microclimate['mean_radiant_temperature'])+hsc*Ta)/(hr+hsc) # ASHRAE, no wind correction
     else: to=(hr*(microclimate['mean_radiant_temperature'])+hsc*(Ta*(wind_speed/v0)**0.5 - ped_properties['T_skin']*(wind_speed/v0-1)**0.5))/(hr+hsc) #operative temperature, Auliciems and Szokolay
