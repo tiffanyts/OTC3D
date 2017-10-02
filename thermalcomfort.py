@@ -2,7 +2,7 @@
 """
 Created on Tue Jun 28 09:28:56 2016
 
-@author: Tiffany Sin 2017
+@author: Tiffany Sin 2017 Negin Nazarian 2017 
 
 Functions for calculating Mean Radiant Temperature and Standard Effective Temperature. 
 Please see examples for the implementation of OTC3D. 
@@ -10,8 +10,7 @@ Please see examples for the implementation of OTC3D.
 This code is in three parts. After importing the necessary modules, the first section determines the pdcoord helper class, which is used to pass spatial data around.
 The second section provides the mean radiant temperature calculation. It is comprised of several smaller functions that are combined in sequence in the function all_mrt()
 The final section consists of the SET calculation, which relies on inputs as defined in the example.  
-"""
-# Neg
+ """
 #
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
@@ -21,12 +20,9 @@ import matplotlib.patches as patches
 
 import numpy as np
 import pandas as pd
-#import pyliburo
-
-
+import pyliburo
 import pvlib
 
-#import pvlib
 
 import datetime
 import time
@@ -39,19 +35,13 @@ def install_and_import(package):
     except ImportError:
         import pip
         pip.main(['install', package])
-
         print "Package not available. Importing package.."
-
     finally:
         globals()[package] = importlib.import_module(package)
         print "Package installed"
 
-install_and_import('pyliburo')
-install_and_import('pvlib')
-
 from OCC.Display import OCCViewer
 #from ExtraFunctions import *
-
 
 #%% Part 1)  Handling input and output data
 # To deal with spatial variability, we introduce the helper class 'pdcoord', which is a Pandas DataFrame of four columns (x, y, z, and value) columns.
@@ -244,21 +234,22 @@ def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
 #7) Use E_dif*solarvf + E_sol*solarvf*shadowint for direct and diffuse solar radiation
 #8) Tmrt = ((Eshort*(1-ped_albedo)+Elong)/sigma)**(1/4.)
 
-Ndir = 1000
+Ndir = 200 # This value can be modified based on the resolution accuracy 
 unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
 sigma =5.67*10**(-8)  
 
 #%%
 
-def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18):
+def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,human=True, TC=0):
     """ This function uses PVLib to calculate solar parameters. 
     Returns a DataFrame of solar vector, solar view factor, 
     direct solar radiation intensity, and diffuse solar radiation 
     intensities from the sky and the ground """
 
+    print UTC_diff
     time_shift = datetime.timedelta(hours=UTC_diff) #SGT is UTC+8    
-    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min')  - time_shift
-    thisloc = pvlib.location.Location(latitude,  longitude, tz='UTC', altitude=0, name=None)
+    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min') - time_shift # pd.to_datetime(pd.Timestamp(casetime)) # pd.DatetimeIndex([pd.Timestamp(np.datetime64(datetime.datetime(y,mo,d,h,mi) + time_shift), tz='UTC')])  
+    thisloc = pvlib.location.Location(latitude, longitude,tz='UTC', altitude=0, name=None) #51.4826,  0.0077,
     solpos = thisloc.get_solarposition(thistime)    
     
     sunpz = np.sin(np.radians(solpos.elevation[0])); hyp = np.cos(np.radians(solpos.elevation[0]))
@@ -266,12 +257,22 @@ def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18):
     sunpx = hyp*np.sin(np.radians(solpos.azimuth[0]))
     
     solar_pmt =  thisloc.get_clearsky(thistime,model='ineichen') #
-    E_sol= solar_pmt.dni[0] #direct normal solar irradiation  [W/m^2]
-    Ground_Diffuse = pvlib.irradiance.grounddiffuse(90,solar_pmt.ghi,albedo =groundalbedo)[0]  #Ground Reflected Solar Irradiation - vertical asphalt surface [W/m^2]
-    Sky_Diffuse =  pvlib.irradiance.isotropic(90, solar_pmt.dhi)[0] #Diffuse Solar Irradiation - vertical surface[W/m^2].        
+    E_sol= solar_pmt['dni'][0] #direct normal solar irradiation  [W/m^2]
+    """ Estimation of solar radiation based on total cloud cover (TC) by Luo et al 2010"""
+    """ TC takes a value between 0 and 0.8. """ 
+    """ E0_Ec is the ratio of observed solar radiation to clear-sky solar radiation """ 
+    E0_Ec=1.0-1.9441*TC**3+2.8777*TC**2-2.2023*TC 
+    N=1.0-E0_Ec
+    E_sol=E_sol*(1.0-N)
+    Ground_Diffuse = pvlib.irradiance.grounddiffuse(90,solar_pmt['ghi'],albedo =groundalbedo)[0]  # Diffuse radiation received on the vertical human body based on reflected solar radiation from the ground [W/m^2]
+    Sky_Diffuse =  pvlib.irradiance.isotropic(90, solar_pmt['dhi'])[0] #Diffuse Solar Irradiation - vertical surface[W/m^2].        
     
     #Formula 9 in Huang et. al. for a standing person, largely independent of gender, body shape and size. For a sitting person, approximately 0.25
-    solarvf=abs(0.0355*np.sin(solpos.elevation[0])+2.33*np.cos(solpos.elevation[0])*(0.0213*np.cos(solpos.azimuth[0])**2+0.00919*np.sin(solpos.azimuth[0])**2)**(0.5)); 
+    if human:
+        solarvf=abs(0.0355*np.sin(solpos.elevation[0])+2.33*np.cos(solpos.elevation[0])*(0.0213*np.cos(solpos.azimuth[0])**2+0.00919*np.sin(solpos.azimuth[0])**2)**(0.5)); 
+    else:
+        solarvf=0.25 # In case calculations are done for a sensor instead of a human 
+        
     results = pd.DataFrame({
     'solarvector':[(sunpx,sunpy,sunpz)],
     'solarviewfactor':[solarvf],
@@ -288,7 +289,8 @@ def check_shadow(key, model, solarvector):
     else: return 1 
 
 def get_shadow(pedestrian_keys, model,solar_vector):
-    """ Returns a dataframe of shadowed (0) and sunlit (1) locations. Ignores points that are on the wall (treats them as not shadowed)  """
+    """ Returns a dataframe of shadowed (0) and sunlit (1) locations. 
+    Ignores points that are on the wall (treats them as not shadowed)  """
     shadow = pdcoord(zip(pedestrian_keys.transpose()[0], pedestrian_keys.transpose()[1], pedestrian_keys.transpose()[2],np.zeros(len(pedestrian_keys)) ))
     shadow.data['v'] = shadow.data.apply(lambda row: check_shadow((row['x'], row['y'], row['z']),model, solar_vector), axis=1)
     return shadow
@@ -326,22 +328,27 @@ def calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity):
     shortwave =  sum([reflect/Ndir for reflect in SurfReflect])
     return longwave, shortwave
 
-def calc_Esky_emis(Ta,RH):
+def calc_Esky_emis(Ta,RH,TC=0):
     """ returns scalar of longwave radiation from the sky, that needs to be factored by SVF  """
     sigma =5.67*10**(-8)
     TaK =  Ta+273.15
-    vp = RH*6.1121*np.exp((18.678-(Ta)/234.4)*(Ta)/(Ta+257.14))/1000
-    skyemis = 1.24*(vp/Ta)**(1/7.)
-    Esky = sigma*skyemis*(TaK**4)*(0.82-0.25*10**(-0.0945*vp))
+    """ Estimation of solar radiation based on total cloud cover (TC) by Luo et al 2010"""
+    """ TC takes a value between 0 and 0.8. """ 
+    """ E0_Ec is the ratio of observed solar radiation to clear-sky solar radiation """ 
+    E0_Ec=1.0-1.9441*TC**3+2.8777*TC**2-2.2023*TC 
+    N=1.0-E0_Ec
+    """ Sky emissivity Idso and Jackson (1969) considering cloud cover based on the comparison of Finch and Best 2004"""
+    skyemis=N+(1-N)*(1.0-0.261*np.exp(-7.77*10**(-4)*(273.16-TaK)**2)) #Idso and Jackson 1096
+    Esky = sigma*(TaK**4)*skyemis
     return Esky
 
-def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_albedo, shadow=False):
+def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_albedo, pedestrian_emiss=0.97, shadow=False):
     """ calculates Stefan-Boltzmann equation for mean radiant temperature, from different sources of radiation in the urban environment """
     sigma =5.67*10**(-8)
     Eshort =  solarparam.diffuse_frm_sky[0]*SVF/2 + solarparam.diffuse_frm_ground[0]*GVF/2 + solarparam.direct_sol[0]*solarparam.solarviewfactor[0]*shadow+ Ereflect 
     Elong = Esky*SVF/2+Esurf+Eground
-    t_mrt= ((Eshort*(1-pedestrian_albedo)+Elong)/sigma)**(1/4.) - 273.15  
-
+    t_mrt= ((Eshort*(1-pedestrian_albedo)+Elong)/sigma/pedestrian_emiss)**(1/4.) - 273.15  
+    
     results = pd.DataFrame({
     'TMRT':[t_mrt],
     'Elong':[Elong],
@@ -353,13 +360,9 @@ def meanradtemp(Esky,Esurf, Eground,Ereflect, solarparam, SVF, GVF,  pedestrian_
 def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,ped_properties,gridsize=1):
     """ Accepts dataframe of solar parameters, model inputs. This function calls all the previous functions in order to calculate each component needed in the Stefan-Boltzmann equation for mean radiant temperature."""
     sigma =5.67*10**(-8)
-
     RH = model_inputs.RH[0]
-    
     try: Esky =np.mean(calc_Esky_emis(pdAirTemp.val_at_coord(key).v, RH)) #Calculation of sky irradiance if air temperature is a pdcoord
     except AttributeError: Esky = calc_Esky_emis(pdAirTemp, RH) #calculation of Esky if air temperature is a bulk value
-  
-    
     svf, gvf, intercepts = fourpiradiation(key, compound) #Calculate Sky view factor, ground view factor, and locations ('intercepts') on the wall at which WVF and wall temperatures need to be retrieved. 
 
     shadowint = check_shadow(key, compound,solarparam.solarvector[0]) #Check if the pedestrian is in a shaded area
@@ -377,22 +380,24 @@ def all_mrt(key,compound,pdAirTemp,pdReflect,pdSurfTemp,solarparam,model_inputs,
         svf+=sum(np.isnan(SurfTemp))/Ndir
         
     SurfAlbedo, SurfEmissivity =  [[x]*len(SurfTemp) for x in [model_inputs.wall_albedo[0], model_inputs.wall_emissivity[0]]] # Repeat surface albedo and emissivity for the same number (N_intercepts) of intercepts. These could be coded differently to be treated as detailed pdcoords. 
+    #print SurfAlbedo
     Elwall, Eswall = calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity) #Calculate radiation based on the four parameters. Surf Albedo not included since SurfReflect already accounts for albedo. 
     Eground = model_inputs.ground_emissivity[0]*sigma*gvf/2*model_inputs.groundtemp[0]**4 # Calculate radiation from the ground based on the ground temperature.
     
-    mrtresults =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam, svf,gvf, ped_properties.body_albedo[0], shadow=shadowint) #calculate Tmrt according to stefan-boltzmann. 
+    mrtresults =  meanradtemp(Esky,Elwall, Eground,Eswall, solarparam, svf,gvf, ped_properties.body_albedo[0], ped_properties.body_emis[0], shadow=shadowint) #calculate Tmrt according to stefan-boltzmann. 
                          
     results = pd.DataFrame({
     'TMRT':[mrtresults.TMRT[0]],
-    'Elong':[mrtresults.Elong[0]],
+    'Elong':[mrtresults.Elong[0]],  
     'Eshort':[mrtresults.Eshort[0]],
     'SVF':[svf],
 #    'Elwall':[Elwall],
 #    'Eswall':[Eswall],
 #    'Eground':[Eground],
     'Esky':[Esky*svf/2],
-    'shadow':[bool(shadowint)]
-    })    
+    'sunlit':[bool(shadowint)]
+    })
+    
     return results
 
 #%% SET Calculations 
@@ -469,6 +474,8 @@ def calc_SET(microclimate,ped_properties):
     #Operative temperature and pressure
     v0 =0.08 #reference wind speed
     #to= Ta+ (1. - 0.73*wind_speed**0.2)*(microclimate['mean_radiant_temperature'][0]- Ta)   # ISO 7726 , qtd in Kazkaz 2012
+    
+    print microclimate['mean_radiant_temperature']
     if wind_speed < 0.08:
         to =  (hr*(microclimate['mean_radiant_temperature'])+hsc*Ta)/(hr+hsc) # ASHRAE, no wind correction
     else: to=(hr*(microclimate['mean_radiant_temperature'])+hsc*(Ta*(wind_speed/v0)**0.5 - ped_properties['T_skin']*(wind_speed/v0-1)**0.5))/(hr+hsc) #operative temperature, Auliciems and Szokolay
@@ -482,6 +489,3 @@ def calc_SET(microclimate,ped_properties):
         s_set = microclimate['SET']= fsolve(func,0)[0]
     except NameError: s_set = np.nan
     return s_set
-
-
-
