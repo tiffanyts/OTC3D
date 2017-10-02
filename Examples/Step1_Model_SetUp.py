@@ -2,7 +2,7 @@
 """
 Created on Fri Feb 10 21:46:47 2017
 Importing the correct files
-@author: Tiffany Sin Negin Nazarian 2017 
+@author: Tiffany Sin 2017 
 """
 import os
 import datetime
@@ -58,8 +58,8 @@ for config in cases:
     #3 calculate the coordinates of the pedestrian keys.
     # 3a) coordinates within your area of study. 'square' is an outer boundary
     a,b,c,d = pyliburo.py3dmodel.fetch.pyptlist_frm_occface(config['square']) 
-    # The number of grids are set to 10 in x and y (100-building grid points in total). This value can be changed for accuracy. 
-    config['pedkeys'] = np.array([(x,y,ped_properties.height[0]) for x in np.linspace( a[0],c[0],10) for y in np.linspace( a[1],c[1],10)])
+    # The number of grids are set to 25 in x and y (625-building grid points in total). This value can be changed for accuracy. 
+    config['pedkeys'] = np.array([(x,y,ped_properties.height[0]) for x in np.linspace( a[0],c[0],25) for y in np.linspace( a[1],c[1],25)])
     config['pedkeys'] = np.array([ [x,y,z] for [x,y,z] in config['pedkeys'] if (((x >= a[0]) & (x <= c[0])) & ((y >= a[1]) &(y <= c[1]) ))  ])
     
     # 3b) remove coordinates inside of the central building. 'lil_square' is an inner boundary.
