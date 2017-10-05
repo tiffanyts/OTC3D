@@ -237,20 +237,21 @@ def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
 #7) Use E_dif*solarvf + E_sol*solarvf*shadowint for direct and diffuse solar radiation
 #8) Tmrt = ((Eshort*(1-ped_albedo)+Elong)/sigma)**(1/4.)
 
-Ndir = 200 # This value can be modified based on the resolution accuracy 
+#Ndir = 200 # This value can be modified based on the resolution accuracy 
 unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
 sigma =5.67*10**(-8)  
 
 #%% Step 1 - solar parameters 
 
-def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,human=True, TC=0):
+def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,human=True, TC=0,time_str_end=None):
     """ This function uses PVLib to calculate solar parameters. 
     Returns a DataFrame of solar vector, solar view factor, 
     direct solar radiation intensity, and diffuse solar radiation 
     intensities from the sky and the ground """
-
-    time_shift = datetime.timedelta(hours=UTC_diff) #example SGT is UTC+8, if not included, UTC=0      
-    thistime =pd.DatetimeIndex(start=time_str, end=time_str, freq='1min') - time_shift # To correct the local time based on the UTC time zone
+    if time_str_end is None:
+        time_str_end = time_str
+    time_shift = datetime.timedelta(hours=UTC_diff) #example SGT is UTC+8 so utc_diff=-8. if not included, UTC=0      
+    thistime =pd.DatetimeIndex(start=time_str, end=time_str_end, freq='1min') - time_shift # To correct the local time based on the UTC time zone
     thisloc = pvlib.location.Location(latitude, longitude,tz='UTC', altitude=0, name=None) #example outputs 51.4826,  0.0077,
     
     # Solar position and the vector components 
@@ -300,10 +301,13 @@ def get_shadow(pedestrian_keys, model,solar_vector):
     return shadow
 
 #%% Step 3 - SVF and Visibility using the fourpiradiation (see Yin et al. 2013) 
-def fourpiradiation(key, model):
+""" note that svf calculated here is twice the total svf value since a hemisphere is considered. 
+Therefore, svf/2 + gvf/2 + wvf (intercept/Ndir)=1 """
+def fourpiradiation(key, model,Ndir=200):
     """ returns SVF, number of ground points (N), and list of intercepts. 
     For uniform ground temperature, do not include ground surface in model. Longwave irradiance from ground can be calculated as emissivity*sigma*groundtemp**4*N/Ndir 
     If ground temperature is not uniform, include the ground in the model, and radiation will be calculated with the other surfaces. """ 
+    unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
     sky=0.; ground = 0.; intercepts=[]
     for direction in unitball.getDirUpperHemisphere():
         (X,Y,Z) = (direction.x,direction.y,direction.z)
@@ -326,7 +330,7 @@ def call_values(intercepts, surfpdcoord, gridsize):
     visibletemps = [surfpdcoord.val_at_coord(target,gridsize).v.mean() for target in intercepts]
     return np.array(visibletemps)
  #%% Step 5
-def calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity):
+def calc_radiation_from_values(SurfTemp, SurfReflect, SurfEmissivity,Ndir=200):
     """ List of values for visible surface parameters. returns long and shortwave radiative components. Assumes that lists are in order and of the same length"""
     sigma =5.67*10**(-8)    
     longwave =  sum([emissivity*sigma*temp**4/Ndir for temp, emissivity in zip(SurfTemp,SurfEmissivity)])
