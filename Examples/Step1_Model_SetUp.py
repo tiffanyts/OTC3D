@@ -50,10 +50,9 @@ myexperiment = {"name":"Example","canyon":96,"cube":32,"AR":0.33, "albedo":0.3, 
 cases = [myexperiment]
 for config in cases:
     #1 build the 3D model - see other example for different methods. This experiment is for a matrix of cubic building.
+    config["model"] = ExtraFunctions.makemodelmatrix((5,3),config['canyon']*config["gridsize"],config['cube']*config['gridsize'],config['cube']*config['gridsize'])["model"]
     #blocks = ExtraFunctions.makemodelmatrix((5,3),config['canyon']*config["gridsize"],config['cube']*config['gridsize'],config['cube']*config['gridsize'])
     #config["model"] = pyliburo.py3dmodel.construct.make_compound([blocks["model"],blocks["ground"]]
-    config["model"] = ExtraFunctions.makemodelmatrix((5,3),config['canyon']*config["gridsize"],config['cube']*config['gridsize'],config['cube']*config['gridsize'])["model"]
-
     #2 define the area of study. In this case, the pedestrian grid is within a square around a central building. 
     config["square"] = ExtraFunctions.make_sq_center(pyliburo.py3dmodel.calculate.get_centre_bbox(config["model"]),(config["canyon"]*config['gridsize']+config["cube"]*config['gridsize']-1)/2)
     
