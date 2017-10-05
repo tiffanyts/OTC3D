@@ -40,7 +40,6 @@ parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
 #%% Ped Locations 
 import time
 simdate = time.strftime("%b %Y")
-
 # lOCATION AND TIME 
 latitude = model_inputs.latitude[0]
 longitude = model_inputs.longitude[0]
@@ -65,7 +64,6 @@ for config in cases:
     
     #initialize a pdcoord for Tmrt that is filled with zeros
     config['TMRT'] =thermalcomfort.pdcoords_from_pedkeys(pedkeys) 
-    config['Shad'] =thermalcomfort.pdcoords_from_pedkeys(pedkeys) 
     for index, row in config['TMRT'].data.iterrows(): #For each pedestrian coordinate...  
         pedkey = (row.x,row.y,row.z) #retrieve the pedestrian's coordinate
         #see code in part 2 of thermalcomfort.py to see step-by-step explanation of the calculation.        
@@ -75,4 +73,5 @@ for config in cases:
     config['TMRT'].data.to_csv(config['name']+ '_'+simdate +'_TMRT.csv')
     config['TMRT'].scatter3d()
 time2 = time.clock()
-print 'TOTAL CALCULATION TIME: ',(time2-time1), 'minutes'
+print 'TOTAL CALCULATION TIME: ',(time2-time1), 'seconds'
+
