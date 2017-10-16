@@ -237,7 +237,7 @@ def pdcoords_from_pedkeys(pedkeys_np, values = np.zeros(0)):
 #7) Use E_dif*solarvf + E_sol*solarvf*shadowint for direct and diffuse solar radiation
 #8) Tmrt = ((Eshort*(1-ped_albedo)+Elong)/sigma)**(1/4.)
 
-#Ndir = 200 # This value can be modified based on the resolution accuracy 
+Ndir = 200 # This value can be modified based on the resolution accuracy 
 unitball = pyliburo.skyviewfactor.tgDirs(Ndir)
 sigma =5.67*10**(-8)  
 
@@ -250,8 +250,8 @@ def calc_solarparam(time_str,latitude,longitude, UTC_diff=0, groundalbedo=0.18,h
     intensities from the sky and the ground """
     if time_str_end is None:
         time_str_end = time_str
-    time_shift = datetime.timedelta(hours=UTC_diff) #example SGT is UTC+8 so utc_diff=-8. if not included, UTC=0      
-    thistime =pd.DatetimeIndex(start=time_str, end=time_str_end, freq='1min') - time_shift # To correct the local time based on the UTC time zone
+    time_shift = datetime.timedelta(hours=UTC_diff) #example SGT is UTC+8 so utc_diff=8. if not included, UTC=0      
+    thistime =pd.DatetimeIndex(start=time_str, end=time_str_end, freq='1min') + time_shift # To correct the local time based on the UTC time zone
     thisloc = pvlib.location.Location(latitude, longitude,tz='UTC', altitude=0, name=None) #example outputs 51.4826,  0.0077,
     
     # Solar position and the vector components 
